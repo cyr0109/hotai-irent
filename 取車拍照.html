@@ -15,8 +15,8 @@
   --disabled:#CED4DE;
   --divider:#EBEBEB;
 
-  --screen-w:390px;   /* JS 會在橫向時對調 */
-  --screen-h:844px;
+  --screen-w:390px;   /* 螢幕短邊；機身尺寸固定，橫向是靠 rotate 不是改寬高 */
+  --screen-h:844px;   /* 螢幕長邊 */
   --bezel:12px;
 }
 *{box-sizing:border-box;-webkit-tap-highlight-color:transparent}
@@ -32,6 +32,8 @@ body{
 /* ══════════ 模擬器外殼 ══════════ */
 .stage{position:fixed;inset:0;display:flex;align-items:center;justify-content:center;gap:32px;padding:24px}
 
+/* 機身尺寸固定不變——轉向靠 rotate，不靠改寬高。
+   JS 會把 transform 設成 rotate(-90deg) scale(s)。 */
 .device{
   position:relative;flex:0 0 auto;
   width:calc(var(--screen-w) + var(--bezel)*2);
@@ -41,22 +43,20 @@ body{
   background:#1c1c1e;
   box-shadow:0 0 0 2px #46464a, 0 26px 60px rgba(0,0,0,.35);
   transform-origin:center center;
-  transition:width .45s cubic-bezier(.4,0,.2,1), height .45s cubic-bezier(.4,0,.2,1);
+  transition:transform .5s cubic-bezier(.4,0,.2,1), margin .5s cubic-bezier(.4,0,.2,1);
 }
 .device__screen{position:relative;width:100%;height:100%;border-radius:46px;overflow:hidden;background:#000}
 
+/* 瀏海與 home indicator 不需要 landscape 版本——機身一轉，它們自己就到位了：
+   機身 rotate(-90deg) 後，上緣跑到視覺左側、下緣跑到視覺右側。 */
 .device__island{
   position:absolute;z-index:60;background:#000;border-radius:14px;
   left:50%;top:11px;transform:translateX(-50%);width:112px;height:30px;
-  transition:all .45s cubic-bezier(.4,0,.2,1);
 }
-.device.landscape .device__island{left:11px;top:50%;transform:translateY(-50%);width:30px;height:112px}
 .device__home{
   position:absolute;z-index:60;background:rgba(0,0,0,.32);border-radius:3px;
   left:50%;bottom:8px;transform:translateX(-50%);width:134px;height:5px;
-  transition:all .45s cubic-bezier(.4,0,.2,1);
 }
-.device.landscape .device__home{left:auto;right:8px;bottom:auto;top:50%;transform:translateY(-50%);width:5px;height:120px}
 .device.dark-ui .device__home{background:rgba(255,255,255,.55)}
 
 /* ══════════ iOS 狀態列 ══════════ */
@@ -77,7 +77,22 @@ body{
 .batt i{display:block;height:100%;width:100%;background:currentColor;border-radius:1px}
 
 /* ══════════ 分頁 ══════════ */
-.viewport{position:absolute;inset:0;overflow:hidden}
+/* 機身轉 -90° 時，內容反向轉 +90° 抵銷，淨旋轉為零 → 畫面永遠是正的，
+   同時版面盒改成 844×390，讓分頁真的以橫式重新排版。
+   844×390 的盒子轉 90° 後占用 390×844，剛好塞滿直式的螢幕區。 */
+.viewport{
+  position:absolute;top:50%;left:50%;
+  width:var(--screen-w);height:var(--screen-h);
+  transform:translate(-50%,-50%);
+  overflow:hidden;
+  transition:width .5s cubic-bezier(.4,0,.2,1),
+             height .5s cubic-bezier(.4,0,.2,1),
+             transform .5s cubic-bezier(.4,0,.2,1);
+}
+.device.landscape .viewport{
+  width:var(--screen-h);height:var(--screen-w);
+  transform:translate(-50%,-50%) rotate(90deg);
+}
 .screen{position:absolute;inset:0;display:none;flex-direction:column;background:var(--bg)}
 .screen.on{display:flex}
 
@@ -568,6 +583,8 @@ const $$ = s => [...document.querySelectorAll(s)];
 
 const PORTRAIT = { w:390, h:844 };
 const BEZEL = 12;
+const BOX_W = PORTRAIT.w + BEZEL*2;    // 機身版面盒，永遠是直的
+const BOX_H = PORTRAIT.h + BEZEL*2;
 let deviceLandscape = false;
 
 function show(id){
@@ -585,10 +602,7 @@ function updateOrientation(){
   if (landscape === deviceLandscape) return;
 
   deviceLandscape = landscape;
-  const dev = $("#device");
-  dev.classList.toggle("landscape", landscape);
-  dev.style.setProperty("--screen-w", (landscape ? PORTRAIT.h : PORTRAIT.w) + "px");
-  dev.style.setProperty("--screen-h", (landscape ? PORTRAIT.w : PORTRAIT.h) + "px");
+  $("#device").classList.toggle("landscape", landscape);
   fitDevice();
 }
 
@@ -596,14 +610,20 @@ const openSheet  = id => { $(id).classList.add("on");    updateOrientation(); };
 const closeSheet = id => { $(id).classList.remove("on"); updateOrientation(); };
 
 function fitDevice(){
-  // 用目標尺寸算，不用 offsetWidth——寬高正在 transition，讀到的會是舊值
-  const boxW = (deviceLandscape ? PORTRAIT.h : PORTRAIT.w) + BEZEL*2;
-  const boxH = (deviceLandscape ? PORTRAIT.w : PORTRAIT.h) + BEZEL*2;
+  // 旋轉後機身的「視覺占地」寬高對調，但版面盒永遠是 BOX_W×BOX_H。
+  const visW0 = deviceLandscape ? BOX_H : BOX_W;
+  const visH0 = deviceLandscape ? BOX_W : BOX_H;
+
   const sideBySide = window.innerWidth > 1200;
   const availW = window.innerWidth - (sideBySide ? 300 + 32 + 48 : 48);
   const availH = window.innerHeight - (sideBySide ? 48 : 240);
-  $("#device").style.transform =
-    "scale(" + Math.max(Math.min(1, availW/boxW, availH/boxH), 0.4) + ")";
+  const s = Math.max(Math.min(1, availW/visW0, availH/visH0), 0.4);
+
+  const dev = $("#device");
+  dev.style.transform = "rotate(" + (deviceLandscape ? -90 : 0) + "deg) scale(" + s + ")";
+  // 版面盒不會跟著 rotate/scale 改變，用 margin 把它補成實際占地，
+  // 否則橫向時機身會壓到右邊的控制面板、直向縮小時又留一大片空白。
+  dev.style.margin = ((visH0*s - BOX_H)/2) + "px " + ((visW0*s - BOX_W)/2) + "px";
 }
 window.addEventListener("resize", fitDevice);
 
