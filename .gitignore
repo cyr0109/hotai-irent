@@ -1,0 +1,17 @@
+# 白名單制：預設排除所有東西，只放行 demo 網頁與它的規格。
+# 資料集、模型權重、實驗腳本、官方原始資料一律不進 repo。
+*
+
+!.gitignore
+!README.md
+
+# ── demo 網頁 ──
+!取車拍照.html
+!asset/
+!asset/**
+
+# ── 規格與設計決策 ──
+!借還車流程.md
+!CONTEXT.md
+!docs/
+!docs/**
