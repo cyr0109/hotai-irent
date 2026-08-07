@@ -124,6 +124,46 @@ body{
   color:#9aa0a8;font-size:12px;line-height:1.6;padding:12px;
 }
 
+/* ══════════ 外殼頁共用元件（P1 / P8 / P9 / P10）══════════ */
+.card{background:var(--surface);border-radius:12px;padding:16px;margin-bottom:12px;box-shadow:0 1px 3px rgba(0,0,0,.05)}
+.chip{display:inline-block;background:var(--irent-blue);color:#fff;font-size:11.5px;padding:3px 9px;border-radius:6px;font-weight:600}
+.row{display:flex;justify-content:space-between;align-items:baseline;gap:12px;font-size:14px;padding:5px 0}
+.row b{font-weight:600}
+.countdown{font-size:44px;font-weight:700;color:var(--irent-blue);text-align:center;letter-spacing:2px}
+
+/* P8 確認取車的列表 */
+.listrow{
+  display:flex;justify-content:space-between;align-items:center;gap:12px;
+  padding:15px 16px;border-bottom:1px solid var(--divider);font-size:14.5px;
+}
+.listrow:last-child{border-bottom:0}
+.listrow__sub{font-size:11.5px;color:var(--irent-red);margin-top:4px;line-height:1.5}
+.listrow__v{color:var(--irent-blue);font-size:14px;display:flex;align-items:center;gap:5px}
+.sign{font-family:"Brush Script MT","Segoe Script",cursive;font-size:23px}
+.toggle{
+  width:46px;height:27px;border-radius:999px;background:var(--irent-blue);
+  position:relative;flex:0 0 auto;
+}
+.toggle::after{content:"";position:absolute;right:3px;top:3px;width:21px;height:21px;border-radius:50%;background:#fff}
+.checkline{display:flex;gap:9px;align-items:flex-start;font-size:12.5px;line-height:1.6;margin-bottom:11px;color:#3d3d3d}
+.checkline i{color:var(--irent-blue);font-style:normal;font-size:15px;line-height:1.3}
+
+/* P10 用車頁 */
+.warnbar{
+  background:var(--surface);border-radius:12px;padding:12px 14px;margin-bottom:12px;
+  box-shadow:0 2px 8px rgba(0,0,0,.1);font-size:13px;font-weight:600;color:var(--irent-red);
+}
+.warnbar span{display:block;font-size:11.5px;color:var(--muted);font-weight:400;margin-top:3px}
+.grid8{display:grid;grid-template-columns:repeat(4,1fr);gap:15px 6px;text-align:center;font-size:11px;color:#4a4a4a}
+.grid8 span{display:block;font-size:19px;margin-bottom:4px}
+.actionbar{display:flex;align-items:center;gap:14px}
+.actionbar .btn{flex:1}
+.actionbar__alt{
+  background:none;border:0;font-family:inherit;font-size:11.5px;color:#4a4a4a;
+  cursor:pointer;text-align:center;line-height:1.4;flex:0 0 auto;text-decoration:none;
+}
+.actionbar__alt span{display:block;font-size:19px}
+
 /* ── C5 車況預先回報：選項卡 ── */
 .opt{
   display:flex;gap:14px;align-items:center;width:100%;text-align:left;
@@ -298,8 +338,34 @@ body{
 
       <div class="viewport">
 
+        <!-- ══════════ P1 靠卡設定【外殼】══════════ -->
+        <section class="screen on" id="screen-card">
+          <div class="navbar">
+            <button class="navbar__btn" style="font-size:15px;font-weight:400">取消</button>
+            <div class="navbar__title"></div>
+            <button class="navbar__btn">☏</button>
+          </div>
+          <div class="progress"><div class="progress__fill" style="width:10%"></div></div>
+          <div class="body">
+            <div class="card" style="text-align:center;padding:22px 18px">
+              <div class="placeholder" style="height:96px;margin-bottom:14px">感應區插圖【外殼】</div>
+              <div style="font-size:14.5px;font-weight:600;line-height:1.7">
+                用 悠遊卡 / 一卡通 感應，未來就能用<br>這張卡片 開關車門 囉！
+              </div>
+            </div>
+            <div class="placeholder" style="height:120px;margin:6px 0 20px">
+              素材待補 ①<br>car-hero.png
+            </div>
+            <div class="countdown" id="card-countdown">00 : 59</div>
+            <p class="sub" style="margin:8px 0 0">請在時間內完成靠卡</p>
+          </div>
+          <div class="footer">
+            <button class="btn-link" id="btn-card-later" style="text-decoration:underline">下次再設定</button>
+          </div>
+        </section>
+
         <!-- ══════════ P2 檢查車輛四周 ══════════ -->
-        <section class="screen on" id="screen-entry">
+        <section class="screen" id="screen-entry">
           <div class="navbar">
             <button class="navbar__btn">‹</button>
             <div class="navbar__title">取車拍照</div>
@@ -412,24 +478,78 @@ body{
           </div>
         </section>
 
-        <!-- ══════════ 取車完成 ══════════ -->
-        <section class="screen" id="screen-done">
+        <!-- ══════════ P8 確認取車【外殼】══════════ -->
+        <section class="screen" id="screen-confirm">
           <div class="navbar">
-            <button class="navbar__btn"></button>
-            <div class="navbar__title">取車拍照</div>
+            <button class="navbar__btn">‹</button>
+            <div class="navbar__title">確認取車</div>
             <button class="navbar__btn">☏</button>
           </div>
-          <div class="progress"><div class="progress__fill" style="width:100%"></div></div>
-          <div class="body" style="justify-content:center;text-align:center">
-            <div style="font-size:52px;color:#2fa860">✓</div>
-            <h1 class="h1">車況記錄已送出</h1>
-            <p class="sub" id="done-summary"></p>
-            <div class="placeholder" style="height:110px;margin-top:12px">
-              後續銜接 P9 確認取車（簽名／保險）<br>【外殼】，不在 G1 範圍
+          <div class="progress"><div class="progress__fill" style="width:85%"></div></div>
+          <div class="body">
+            <div class="card" style="padding:0">
+              <div class="listrow"><span>查看租車合約</span><span class="listrow__v">›</span></div>
+              <div class="listrow">
+                <span>查詢/邀請共同承租人
+                  <span class="listrow__sub">還有人未回覆邀請哦！快通知對方至通知中心確認</span>
+                </span>
+                <span class="listrow__v">›</span>
+              </div>
+              <div class="listrow"><span>預設還車時間</span><span class="listrow__v">2/20 10:00 ✎</span></div>
+              <div class="listrow"><span>確認簽名</span><span class="sign">吳致賢</span></div>
+              <div class="listrow"><span>安心服務 · $50<span style="color:var(--muted)">/hr</span></span>
+                <span class="listrow__v">已加購 <i class="toggle"></i></span></div>
+              <div class="listrow"><span>行車記錄器 · $100<span style="color:var(--muted)">/日</span></span>
+                <span class="listrow__v">已加購 <i class="toggle"></i></span></div>
+            </div>
+
+            <div style="padding:4px 2px">
+              <div class="checkline"><i>✓</i><span>我已確認租車合約無誤</span></div>
+              <div class="checkline"><i>✓</i><span>我確實遵守「酒後不駕車」的安全法則</span></div>
+              <div class="checkline"><i>✓</i><span>我同意不懸掛偽造、已吊扣、報廢、其他車輛之車牌，及污損車牌行為</span></div>
+              <div class="checkline"><i>✓</i><span>我同意訂單異動時，由和雲行動服務代為處理發票及銷貨退回證明單，以加速退款作業</span></div>
+              <div class="checkline"><i>✓</i><span>我同意行車紀錄器啟用須知</span></div>
             </div>
           </div>
           <div class="footer">
-            <button class="btn btn--red" data-restart>再跑一次</button>
+            <button class="btn btn--red" id="btn-confirm">確認取車</button>
+          </div>
+        </section>
+
+        <!-- ══════════ P10 用車頁【外殼】══════════ -->
+        <section class="screen" id="screen-trip">
+          <div class="navbar">
+            <button class="navbar__btn">✕</button>
+            <div class="navbar__title">用車頁</div>
+            <button class="navbar__btn">☏</button>
+          </div>
+          <div class="progress"><div class="progress__fill" style="width:100%"></div></div>
+          <div class="body">
+            <div class="warnbar">⚠ 提醒您！請勿在車內吸菸！<span>違者將酌收車輛清潔費用 1000 元</span></div>
+            <div><span class="chip">同站</span></div>
+            <div class="card" style="margin-top:12px">
+              <div style="font-size:24px;font-weight:700;letter-spacing:1px">RCG-2235</div>
+              <div class="row" style="margin-top:12px"><span>已使用時間</span><b>00 : 00 : 12</b></div>
+            </div>
+            <div class="card">
+              <div class="row"><span>預計還車時間</span><b style="color:var(--irent-blue)">12/25 (四) 18:00</b></div>
+              <div class="row"><span>還車站點</span><b style="color:var(--irent-blue)">iRent 金華公園站 ›</b></div>
+              <div style="font-size:11.5px;color:var(--muted)">台北市大安區金華街254巷1號－B1</div>
+            </div>
+            <div class="card">
+              <div class="grid8">
+                <div><span>🚗</span>車況回報</div><div><span>▶</span>教學影片</div>
+                <div><span>◎</span>操作教學</div><div><span>Ⓟ</span>臨時停車</div>
+                <div><span>🔑</span>開關門卡</div><div><span>⌚</span>配對裝置</div>
+                <div><span>☰</span>租車合約</div><div><span>▤</span>行車紀錄</div>
+              </div>
+            </div>
+          </div>
+          <div class="footer">
+            <div class="actionbar">
+              <button class="btn btn--blue">🔓 開車門</button>
+              <a class="actionbar__alt" href="還車拍照.html"><span>👐</span>開始還車</a>
+            </div>
           </div>
         </section>
 
@@ -446,13 +566,55 @@ body{
             <h1 class="h1">已收到回報</h1>
             <p class="sub" id="reported-summary"></p>
             <div class="placeholder" style="height:110px;margin-top:12px">
-              後續回到車輛列表，改租其他車輛<br>【外殼】，不在 G1 範圍
+              後續回到車輛列表，改租其他車輛<br>【外殼】，不在本次範圍
             </div>
           </div>
           <div class="footer">
             <button class="btn btn--red" data-restart>再跑一次</button>
           </div>
         </section>
+
+        <!-- ══════════ P1 靠卡設定的 modal【外殼】══════════ -->
+        <div class="scrim scrim--center" id="scrim-card">
+          <div class="sheet sheet--center">
+            <div class="placeholder" style="height:110px;margin-bottom:16px">車輛插圖【外殼】</div>
+            <p class="sheet__p" style="text-align:center;font-size:14.5px;color:var(--ink)">
+              設定卡片後，在訊號差的區域也能解鎖哦
+            </p>
+            <button class="btn btn--blue" id="btn-card-skip">先不設定</button>
+            <button class="btn-link" id="btn-card-back">返回</button>
+          </div>
+        </div>
+
+        <!-- ══════════ P9 用車說明【外殼】══════════ -->
+        <div class="scrim scrim--center" id="scrim-manual">
+          <div class="sheet sheet--center" style="padding:0;overflow:hidden">
+            <div class="placeholder" style="height:130px;border-radius:16px 16px 0 0;border:0">
+              駕駛座照片＋①②③ 標號【外殼】
+            </div>
+            <div style="padding:18px 20px 20px">
+              <h2 class="sheet__h" style="text-align:center">用車說明</h2>
+              <div style="font-size:12.5px;line-height:1.75">
+                <p style="margin:12px 0 4px"><b style="color:var(--irent-red)">1</b> <b>鑰匙盒</b></p>
+                <ul style="margin:0;padding-left:18px;color:#3d3d3d">
+                  <li>上車後，請由手套箱內鑰匙座取出鑰匙。</li>
+                  <li>還車前，請將鑰匙扣回鑰匙座。</li>
+                </ul>
+                <p style="margin:12px 0 4px"><b style="color:var(--irent-red)">2</b> <b>加油卡 / 停車卡</b></p>
+                <ul style="margin:0;padding-left:18px;color:#3d3d3d">
+                  <li>憑駕駛座上方加油卡可至全台中油、台塑及全國加油站免費加油。請加滿！還車時將依實際行駛距離計算里程費。</li>
+                  <li>部分 iRent 位於停車場內，請以停車卡進出。</li>
+                </ul>
+                <p style="margin:12px 0 4px"><b style="color:var(--irent-red)">3</b> <b>租車手冊</b></p>
+                <ul style="margin:0;padding-left:18px;color:#3d3d3d">
+                  <li>租車過程中若有任何問題，請翻閱手套箱內的租車手冊；遇到臨檢亦可取出車輛行照及保險卡供查驗。</li>
+                </ul>
+              </div>
+              <div class="checkline" style="justify-content:center;margin:16px 0 12px"><i>✓</i><span>以後不要再顯示</span></div>
+              <button class="btn btn--blue" id="btn-manual-ok">我知道了</button>
+            </div>
+          </div>
+        </div>
 
         <!-- ══════════ C3 補拍提示 ══════════ -->
         <div class="scrim" id="scrim-recheck">
@@ -1092,7 +1254,32 @@ async function enterCamera(mode){
 }
 
 /* P2 → P3 */
+/* ── P1 靠卡設定【外殼】── */
+/* 倒數只是氣氛，歸零就停住不自動跳頁——真正的往下走是實體靠卡（做不出來）
+   或流程圖上那條「下次再設定 → 先不設定」的路徑，那條是常駐的。
+   自動跳頁會在 demo 講解到一半時亂跑。 */
+(function countdown(){
+  let sec = 59;
+  const tick = setInterval(() => {
+    if (!$("#screen-card").classList.contains("on") || sec <= 0){ clearInterval(tick); return; }
+    $("#card-countdown").textContent = "00 : " + String(--sec).padStart(2, "0");
+  }, 1000);
+})();
+$("#btn-card-later").addEventListener("click", () => openSheet("#scrim-card"));
+$("#btn-card-back").addEventListener("click", () => closeSheet("#scrim-card"));
+$("#btn-card-skip").addEventListener("click", () => {
+  closeSheet("#scrim-card");
+  show("screen-entry");
+});
+
 $("#btn-start").addEventListener("click", () => show("screen-report"));
+
+/* ── P8 確認取車 → P9 用車說明 → P10 用車頁【外殼】── */
+$("#btn-confirm").addEventListener("click", () => {
+  show("screen-trip");
+  openSheet("#scrim-manual");
+});
+$("#btn-manual-ok").addEventListener("click", () => closeSheet("#scrim-manual"));
 
 /* P3 車況預先回報（C5）*/
 $("#opt-ok").addEventListener("click", () => {
@@ -1126,19 +1313,20 @@ function finishReported(){
   show("screen-reported");
 }
 
-/* P5→P6→P7 走完的終點 */
+/* P5→P6→P7 走完 → P8 確認取車。
+   規格裡沒有「車況記錄已送出」這種中繼頁，結果摘要改寫進 demo 面板。 */
 function finish(){
   if (state.stream) state.stream.getTracks().forEach(t => t.stop());
   const parts = [];
-  parts.push(state.preReport === "damaged" ? "已記錄您的車況回報" : "未回報車況異常");
+  parts.push(state.preReport === "damaged" ? "已記錄車況回報" : "未回報異常");
   parts.push(state.issues.length === 0
-    ? "四張方向照全部通過檢查"
+    ? "四張方向照全部通過"
     : "記錄 " + state.issues.length + " 項缺項與同意紀錄");
   parts.push(state.damageShots.length
     ? "車損特寫 " + state.damageShots.length + " 張"
     : "未加拍車損特寫");
-  $("#done-summary").textContent = parts.join("，") + "。";
-  show("screen-done");
+  setPath(parts.join("／"));
+  show("screen-confirm");
 }
 
 /* ── 閃光燈：能開真 torch 就開，否則只切 UI ── */
