@@ -1,0 +1,1425 @@
+<!doctype html>
+<html lang="zh-Hant">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<title>iRent 還車拍照 — R1–R12</title>
+<style>
+:root{
+  --irent-red:#D7000F;
+  --irent-blue:#1DA6D0;
+  --bg:#F2F3F5;
+  --surface:#FFFFFF;
+  --ink:#000000;
+  --muted:#888989;
+  --disabled:#CED4DE;
+  --divider:#EBEBEB;
+  --warn:#E8890C;
+  --ok:#2FA860;
+
+  --screen-w:390px;   /* 螢幕短邊；機身尺寸固定，橫向靠 rotate 不是改寬高 */
+  --screen-h:844px;   /* 螢幕長邊 */
+  --bezel:12px;
+}
+*{box-sizing:border-box;-webkit-tap-highlight-color:transparent}
+html,body{margin:0;height:100%}
+body{
+  background:#e8eaed;
+  background-image:radial-gradient(900px 600px at 50% -10%,#f6f7f9,transparent 70%);
+  color:var(--ink);
+  font-family:-apple-system,BlinkMacSystemFont,"PingFang TC","Helvetica Neue","Microsoft JhengHei",sans-serif;
+  overflow:hidden;
+}
+
+/* ══════════ 模擬器外殼 ══════════ */
+.stage{position:fixed;inset:0;display:flex;align-items:center;justify-content:center;gap:32px;padding:24px}
+
+.device{
+  position:relative;flex:0 0 auto;
+  width:calc(var(--screen-w) + var(--bezel)*2);
+  height:calc(var(--screen-h) + var(--bezel)*2);
+  padding:var(--bezel);
+  border-radius:calc(46px + var(--bezel));
+  background:#1c1c1e;
+  box-shadow:0 0 0 2px #46464a, 0 26px 60px rgba(0,0,0,.35);
+  transform-origin:center center;
+  transition:transform .5s cubic-bezier(.4,0,.2,1), margin .5s cubic-bezier(.4,0,.2,1);
+}
+.device__screen{position:relative;width:100%;height:100%;border-radius:46px;overflow:hidden;background:#000}
+.device__island{
+  position:absolute;z-index:60;background:#000;border-radius:14px;
+  left:50%;top:11px;transform:translateX(-50%);width:112px;height:30px;
+}
+.device__home{
+  position:absolute;z-index:60;background:rgba(0,0,0,.32);border-radius:3px;
+  left:50%;bottom:8px;transform:translateX(-50%);width:134px;height:5px;
+}
+.device.dark-ui .device__home{background:rgba(255,255,255,.55)}
+
+.statusbar{
+  position:absolute;z-index:20;left:0;right:0;top:0;height:52px;
+  display:flex;align-items:center;justify-content:space-between;
+  padding:0 30px;font-size:14px;font-weight:600;color:var(--ink);pointer-events:none;
+}
+.device.landscape .statusbar{display:none}
+.device.dark-ui .statusbar{color:#fff}
+.statusbar__right{display:flex;align-items:center;gap:5px}
+.bars{display:flex;align-items:flex-end;gap:2px;height:11px}
+.bars i{width:3px;background:currentColor;border-radius:1px;display:block}
+.bars i:nth-child(1){height:4px}.bars i:nth-child(2){height:6px}
+.bars i:nth-child(3){height:8px}.bars i:nth-child(4){height:11px}
+.batt{width:24px;height:12px;border:1.5px solid currentColor;border-radius:3px;position:relative;padding:1.5px}
+.batt::after{content:"";position:absolute;right:-3px;top:3.5px;width:2px;height:5px;background:currentColor;border-radius:0 1px 1px 0}
+.batt i{display:block;height:100%;width:100%;background:currentColor;border-radius:1px}
+
+/* 機身轉 -90° 時內容反向轉 +90° 抵銷，同時版面盒改成橫式重新排版 */
+.viewport{
+  position:absolute;top:50%;left:50%;
+  width:var(--screen-w);height:var(--screen-h);
+  transform:translate(-50%,-50%);
+  overflow:hidden;
+  transition:width .5s cubic-bezier(.4,0,.2,1),
+             height .5s cubic-bezier(.4,0,.2,1),
+             transform .5s cubic-bezier(.4,0,.2,1);
+}
+.device.landscape .viewport{
+  width:var(--screen-h);height:var(--screen-w);
+  transform:translate(-50%,-50%) rotate(90deg);
+}
+
+/* ══════════ 分頁 ══════════ */
+.screen{position:absolute;inset:0;display:none;flex-direction:column;background:var(--bg)}
+.screen.on{display:flex}
+
+.navbar{
+  background:var(--surface);padding:52px 16px 10px;
+  display:grid;grid-template-columns:32px 1fr 32px;align-items:center;
+  font-size:17px;font-weight:600;
+}
+.navbar__title{text-align:center}
+.navbar__btn{background:none;border:0;padding:0;font-size:22px;color:var(--ink);cursor:pointer;line-height:1}
+.progress{height:3px;background:var(--divider)}
+.progress__fill{height:100%;background:var(--irent-red);transition:width .3s}
+
+.body{flex:1;overflow-y:auto;padding:26px 22px;display:flex;flex-direction:column}
+.h1{font-size:23px;font-weight:700;text-align:center;margin:6px 0 10px;line-height:1.45}
+.sub{font-size:14px;line-height:1.7;color:var(--muted);text-align:center;margin:0 0 22px}
+.plate-label{text-align:center;font-size:15px;color:#4a4a4a;margin-top:14px}
+
+.btn{display:block;width:100%;border:0;border-radius:999px;padding:16px;font-size:17px;font-weight:600;font-family:inherit;cursor:pointer}
+.btn--red{background:var(--irent-red);color:#fff}
+.btn--blue{background:var(--irent-blue);color:#fff}
+.btn:disabled{background:var(--disabled);color:#fff;cursor:default}
+.btn-link{display:block;width:100%;background:none;border:0;padding:14px;font-size:15px;color:var(--muted);font-family:inherit;cursor:pointer;text-align:center}
+.footer{padding:0 22px 34px}
+
+.placeholder{
+  border:1.5px dashed #C4C7CE;border-radius:12px;
+  background:repeating-linear-gradient(45deg,#fafafa,#fafafa 8px,#f2f2f4 8px,#f2f2f4 16px);
+  display:flex;align-items:center;justify-content:center;text-align:center;
+  color:#9aa0a8;font-size:12px;line-height:1.6;padding:12px;
+}
+
+/* ── 用車頁（外殼）── */
+.chip{display:inline-block;background:var(--irent-blue);color:#fff;font-size:11.5px;padding:3px 9px;border-radius:6px;font-weight:600}
+.card{background:var(--surface);border-radius:12px;padding:16px;margin-bottom:12px;box-shadow:0 1px 3px rgba(0,0,0,.05)}
+.card__label{font-size:12.5px;color:var(--muted)}
+.card__big{font-size:30px;font-weight:700;letter-spacing:1px;text-align:center;padding:6px 0}
+.row{display:flex;justify-content:space-between;align-items:baseline;gap:12px;font-size:14px;padding:5px 0}
+.row b{font-weight:600}
+.grid8{display:grid;grid-template-columns:repeat(4,1fr);gap:14px 6px;text-align:center;font-size:11px;color:#4a4a4a}
+.grid8 span{display:block;font-size:19px;margin-bottom:4px}
+
+/* ── C5 回報選項卡 ── */
+.opt{
+  display:flex;gap:14px;align-items:center;width:100%;text-align:left;
+  background:var(--surface);border:1.5px solid var(--divider);border-radius:14px;
+  padding:18px 16px;margin-bottom:12px;cursor:pointer;font-family:inherit;
+}
+.opt:hover{border-color:var(--irent-blue)}
+.opt__ic{
+  width:46px;height:46px;border-radius:50%;background:var(--bg);flex:0 0 auto;
+  display:flex;align-items:center;justify-content:center;font-size:21px;
+}
+.opt__ic--ok{color:var(--ok)}
+.opt__ic--bad{color:var(--irent-red)}
+.opt__t{font-size:16px;font-weight:600}
+.opt__d{font-size:12.5px;color:var(--muted);margin-top:4px;line-height:1.55}
+.reward{display:flex;align-items:center;justify-content:center;gap:6px;font-size:12.5px;color:var(--ok);margin-top:6px}
+
+/* ── R2 還車地點 radio card ── */
+.radiocard{
+  display:block;width:100%;text-align:left;font-family:inherit;cursor:pointer;
+  background:var(--surface);border:1.5px solid var(--divider);border-radius:14px;
+  padding:16px;margin-bottom:12px;position:relative;
+}
+.radiocard.sel{border-color:var(--irent-blue)}
+.radiocard__t{font-size:16px;font-weight:600;margin-bottom:6px}
+.radiocard__d{font-size:12.5px;color:#4a4a4a;line-height:1.65}
+.radiocard ul{margin:6px 0 0;padding-left:18px;color:var(--muted);font-size:12px;line-height:1.8}
+.radiocard__dot{
+  position:absolute;right:16px;top:18px;width:19px;height:19px;border-radius:50%;
+  border:1.5px solid var(--disabled);
+}
+.radiocard.sel .radiocard__dot{border-color:var(--irent-blue);background:radial-gradient(circle,var(--irent-blue) 0 5px,#fff 6px)}
+.mapstub{
+  height:150px;border-radius:12px;margin-bottom:16px;
+  background:linear-gradient(135deg,#e9edf2,#dfe5ec);
+  display:flex;align-items:center;justify-content:center;color:#9aa0a8;font-size:12px;position:relative;
+}
+.mapstub::after{content:"📍";position:absolute;font-size:26px}
+
+/* ══════════ 相機頁 ══════════ */
+#screen-camera{background:#000}
+.cam{position:absolute;inset:0}
+#preview{position:absolute;inset:0;width:100%;height:100%;object-fit:cover;background:#000;display:none}
+.cam__note{
+  position:absolute;inset:0;display:none;flex-direction:column;
+  align-items:center;justify-content:center;gap:10px;padding:0 60px;text-align:center;
+  color:#8b9098;font-size:13px;line-height:1.7;
+}
+.cam__note.on{display:flex}
+.cam__note .box{border:1.5px dashed #4a4e56;border-radius:10px;padding:16px 22px;color:#a7acb4;font-size:12.5px;max-width:430px}
+
+.cam__top{
+  position:absolute;left:0;right:0;top:0;z-index:5;
+  padding:16px 44px 26px 52px;
+  display:grid;grid-template-columns:1fr auto;align-items:start;gap:16px;
+  background:linear-gradient(180deg,rgba(0,0,0,.72),transparent);color:#fff;
+}
+.cam__title{font-size:15px;font-weight:600}
+.cam__subtitle{font-size:12px;color:#c9ccd2;margin-top:2px}
+.cam__done{background:none;border:0;color:#fff;font-size:15px;font-family:inherit;cursor:pointer;padding:2px}
+.cam__done:disabled{color:#6b6f76;cursor:default}
+
+.cam__bottom{
+  position:absolute;left:0;right:0;bottom:0;z-index:5;
+  padding:26px 36px 16px 52px;display:flex;align-items:center;gap:16px;
+  background:linear-gradient(0deg,rgba(0,0,0,.78),transparent);
+}
+.slots{display:flex;gap:6px;flex:1;overflow-x:auto}
+.slot{
+  flex:0 0 auto;width:56px;height:36px;border-radius:5px;
+  background:rgba(255,255,255,.14);border:1.5px solid transparent;
+  display:flex;align-items:center;justify-content:center;
+  font-size:10px;color:#d4d7dc;overflow:hidden;position:relative;
+}
+.slot.active{border-color:#fff}
+.slot.empty{border:1.5px dashed rgba(255,255,255,.3);background:none}
+.slot img{width:100%;height:100%;object-fit:cover}
+.slot__flag{position:absolute;top:2px;right:2px;width:8px;height:8px;border-radius:50%;background:#ffb020;display:none}
+.slot.flagged .slot__flag{display:block}
+
+.flashbtn{background:none;border:0;color:#fff;font-size:19px;cursor:pointer;width:30px;font-family:inherit}
+.flashbtn[data-mode="off"]{opacity:.45}
+.shutter{
+  width:56px;height:56px;border-radius:50%;background:#fff;
+  border:4px solid rgba(255,255,255,.32);background-clip:padding-box;cursor:pointer;flex:0 0 auto;
+}
+.shutter:disabled{background:#6b6e75;cursor:default}
+
+.watermark{
+  position:absolute;left:50%;bottom:86px;transform:translateX(-50%);z-index:4;
+  background:rgba(0,0,0,.55);color:#fff;font-size:12px;padding:5px 12px;border-radius:999px;letter-spacing:.5px;
+}
+.hint-lowlight{
+  position:absolute;left:50%;top:66px;transform:translateX(-50%);z-index:6;
+  background:rgba(0,0,0,.62);color:#ffd66b;font-size:12px;padding:7px 14px;border-radius:999px;display:none;white-space:nowrap;
+}
+.hint-lowlight.on{display:block}
+
+.blocker{
+  position:absolute;inset:0;z-index:8;background:rgba(0,0,0,.86);
+  display:none;flex-direction:column;align-items:center;justify-content:center;gap:14px;
+  text-align:center;padding:24px;color:#fff;
+}
+.blocker.on{display:flex}
+.blocker__icon{width:40px;height:66px;border:3px solid #fff;border-radius:9px;animation:tilt 1.6s ease-in-out infinite}
+@keyframes tilt{0%,20%{transform:rotate(0)}60%,100%{transform:rotate(-90deg)}}
+.blocker__text{font-size:17px;font-weight:600}
+.blocker__sub{font-size:13px;color:#b9bcc2;max-width:300px;line-height:1.6}
+
+/* 直向時相機介面收起，只留最後取景的照片當背景 */
+.device:not(.landscape) .cam__top,
+.device:not(.landscape) .cam__bottom,
+.device:not(.landscape) .watermark,
+.device:not(.landscape) .hint-lowlight,
+.device:not(.landscape) .blocker{display:none}
+
+/* ══════════ Sheet / Modal ══════════ */
+.scrim{position:absolute;inset:0;background:rgba(0,0,0,.5);display:none;align-items:flex-end;justify-content:center;z-index:40}
+.scrim.on{display:flex}
+.scrim--center{align-items:center;padding:20px}
+.sheet{background:var(--surface);color:var(--ink);width:100%;border-radius:16px 16px 0 0;padding:22px 20px 30px;max-height:88%;overflow-y:auto}
+.sheet--center{border-radius:16px;padding-bottom:20px}
+.sheet__h{font-size:19px;font-weight:700;margin:0 0 6px}
+.sheet__p{font-size:13.5px;line-height:1.75;color:#3d3d3d;margin:0 0 16px}
+.sheet ul.check{margin:0 0 14px;padding-left:20px;font-size:13.5px;line-height:2}
+.sheet ol{margin:0 0 14px;padding-left:20px;font-size:13px;line-height:1.85;color:#3d3d3d}
+
+.issue{display:flex;gap:12px;align-items:center;padding:12px 0;border-bottom:1px solid var(--divider)}
+.issue:last-of-type{border-bottom:0}
+.issue__thumb{width:58px;height:39px;border-radius:6px;background:#e4e6ea;flex:0 0 auto;object-fit:cover}
+.issue__body{flex:1;min-width:0}
+.issue__t{font-size:14px;font-weight:600}
+.issue__d{font-size:12px;color:var(--muted);margin-top:3px;line-height:1.5}
+.issue__go{
+  background:none;border:1.5px solid var(--irent-blue);color:var(--irent-blue);
+  border-radius:999px;padding:7px 12px;font-size:12px;font-family:inherit;cursor:pointer;flex:0 0 auto;font-weight:600;
+}
+
+.waiver-list{background:var(--bg);border-radius:10px;padding:14px 16px;margin:0 0 16px}
+.waiver-list li{font-size:13.5px;line-height:1.9;margin-left:-6px}
+.legal{font-size:12.5px;line-height:1.8;color:#5a5a5a;margin:0 0 18px}
+
+/* ── R12 推播 ── */
+.push{
+  position:absolute;z-index:70;left:10px;right:10px;top:12px;
+  background:rgba(250,250,252,.94);backdrop-filter:blur(12px);
+  border-radius:16px;padding:12px 14px;box-shadow:0 8px 24px rgba(0,0,0,.18);
+  transform:translateY(-140%);transition:transform .5s cubic-bezier(.2,.9,.3,1.2);
+  cursor:pointer;
+}
+.push.on{transform:translateY(0)}
+.push__hd{display:flex;align-items:center;gap:7px;font-size:11.5px;color:var(--muted);margin-bottom:4px}
+.push__hd b{color:var(--ink);font-size:12px}
+.push__t{font-size:13.5px;font-weight:600;margin-bottom:2px}
+.push__d{font-size:12.5px;color:#4a4a4a;line-height:1.5}
+
+/* ── R12 車況紀錄頁 ── */
+.verdict{border-radius:12px;padding:16px;margin-bottom:16px;color:#fff}
+.verdict--ok{background:var(--ok)}
+.verdict--warn{background:var(--irent-red)}
+.verdict__t{font-size:16px;font-weight:700;margin-bottom:4px}
+.verdict__d{font-size:12.5px;line-height:1.6;opacity:.95}
+.sectionlabel{font-size:12.5px;font-weight:600;color:var(--muted);margin:18px 0 8px}
+.photogrid{display:grid;grid-template-columns:1fr 1fr;gap:8px}
+.photogrid figure{margin:0}
+.photogrid img{width:100%;aspect-ratio:16/9;object-fit:cover;border-radius:8px;display:block}
+.photogrid figcaption{font-size:10.5px;color:var(--muted);margin-top:4px;line-height:1.5}
+.meta{font-size:12px;color:#4a4a4a;line-height:1.9;background:var(--surface);border-radius:10px;padding:12px 14px}
+.meta b{font-weight:600}
+
+/* ══════════ demo 控制 ══════════ */
+.devbar{
+  flex:0 0 auto;width:300px;background:#fff;border:1px solid #dfe1e5;border-radius:14px;
+  padding:18px;font-size:12.5px;color:#5a5f66;line-height:1.6;box-shadow:0 6px 20px rgba(0,0,0,.06);
+}
+.devbar h3{margin:0 0 4px;font-size:14px;color:var(--ink)}
+.devbar__note{color:#9aa0a8;font-size:11.5px;margin:0 0 12px}
+.devbar label{display:block;font-weight:600;color:var(--ink);margin:14px 0 6px;font-size:12.5px}
+.devbar select,.devbar button{
+  width:100%;font-family:inherit;font-size:12.5px;padding:9px 11px;
+  border:1px solid var(--divider);border-radius:9px;background:#fff;color:var(--ink);cursor:pointer;
+}
+.devbar__state{margin-top:14px;padding-top:12px;border-top:1px solid var(--divider);font-size:11.5px;color:#9aa0a8}
+.devbar__path{margin-top:8px;font-size:11.5px;color:#5a5f66}
+@media (max-width:1200px){
+  .stage{flex-direction:column;gap:16px;overflow:auto;align-items:center}
+  .devbar{width:min(390px,90vw)}
+}
+</style>
+</head>
+<body>
+
+<div class="stage">
+  <div class="device" id="device">
+    <div class="device__screen">
+      <div class="statusbar">
+        <span>9:41</span>
+        <span class="statusbar__right">
+          <span class="bars"><i></i><i></i><i></i><i></i></span>
+          <span class="batt"><i></i></span>
+        </span>
+      </div>
+
+      <div class="viewport">
+
+        <!-- ══════════ 用車頁【外殼】══════════ -->
+        <section class="screen on" id="screen-trip">
+          <div class="navbar">
+            <button class="navbar__btn">✕</button>
+            <div class="navbar__title">用車頁</div>
+            <button class="navbar__btn">☏</button>
+          </div>
+          <div class="progress"><div class="progress__fill" style="width:5%"></div></div>
+          <div class="body">
+            <div><span class="chip">路邊</span></div>
+            <div class="card" style="margin-top:12px">
+              <div style="font-size:24px;font-weight:700;letter-spacing:1px">RCG-2235</div>
+              <div class="card__label" style="margin-top:14px">已使用時間</div>
+              <div class="card__big">00 : 41 : 20</div>
+            </div>
+            <div class="card">
+              <div class="row"><span>預計還車時間</span><b style="color:var(--irent-blue)">12/26 (五) 09:00</b></div>
+              <div class="row"><span>還車範圍</span><b style="color:var(--irent-blue)">北區 ｜ 調度停車場</b></div>
+            </div>
+            <div class="card">
+              <div class="grid8">
+                <div><span>🚗</span>車況回報</div><div><span>▶</span>教學影片</div>
+                <div><span>◎</span>操作教學</div><div><span>Ⓟ</span>臨時停車</div>
+                <div><span>🔑</span>開關門卡</div><div><span>⌚</span>配對裝置</div>
+                <div><span>☰</span>租車合約</div><div><span>▤</span>行車紀錄</div>
+              </div>
+            </div>
+          </div>
+          <div class="footer">
+            <button class="btn btn--blue" id="btn-start-return">開始還車</button>
+          </div>
+        </section>
+
+        <!-- ══════════ R2 還車地點類型【外殼】══════════ -->
+        <section class="screen" id="screen-location">
+          <div class="navbar">
+            <button class="navbar__btn" data-back="screen-trip">‹</button>
+            <div class="navbar__title">還車地點確認</div>
+            <button class="navbar__btn">☏</button>
+          </div>
+          <div class="progress"><div class="progress__fill" style="width:20%"></div></div>
+          <div class="body">
+            <div class="mapstub">地圖（外殼，不接真實地圖）</div>
+            <h2 style="font-size:16px;font-weight:600;margin:0 0 14px">請選擇您還車的地點類型：</h2>
+
+            <button class="radiocard" data-loc="roadside">
+              <span class="radiocard__dot"></span>
+              <div class="radiocard__t">▥ 路邊停車格</div>
+              <div class="radiocard__d">僅可還車於一般路邊汽車停車格。<br>常見禁止還車地點舉例：</div>
+              <ul><li>未劃設汽車停車格之白線及空地</li><li>限時停車格</li><li>累進費率停車格</li><li>時段性禁停車格</li></ul>
+            </button>
+
+            <button class="radiocard" data-loc="lot">
+              <span class="radiocard__dot"></span>
+              <div class="radiocard__t">Ⓟ 停車場</div>
+              <div class="radiocard__d">除 iRent 配合之調度停車場外，其餘停車場皆不可還車。</div>
+            </button>
+          </div>
+          <div class="footer">
+            <button class="btn btn--red" id="btn-loc-ok" disabled>已確認還車地點</button>
+          </div>
+        </section>
+
+        <!-- ══════════ R4 檢查車輛狀況【外殼】══════════ -->
+        <section class="screen" id="screen-precheck">
+          <div class="navbar">
+            <button class="navbar__btn" data-back="screen-location">‹</button>
+            <div class="navbar__title">拍照</div>
+            <button class="navbar__btn">☏</button>
+          </div>
+          <div class="progress"><div class="progress__fill" style="width:30%"></div></div>
+          <div class="body">
+            <h1 class="h1">檢查車輛狀況</h1>
+            <p class="sub">請仔細檢查有無損傷、凹陷等，<br>完善拍照可保障自身權益。</p>
+            <div class="placeholder" style="height:200px;margin:10px 0">
+              素材待補 ①<br>car-hero.png
+            </div>
+            <div class="plate-label">車號：<span data-plate>RCG-2235</span></div>
+          </div>
+          <div class="footer">
+            <button class="btn btn--red" id="btn-precheck-ok">檢查完成，下一步</button>
+          </div>
+        </section>
+
+        <!-- ══════════ R5 車況預先回報（C5）══════════ -->
+        <section class="screen" id="screen-report">
+          <div class="navbar">
+            <button class="navbar__btn" data-back="screen-precheck">‹</button>
+            <div class="navbar__title">還車拍照</div>
+            <button class="navbar__btn">☏</button>
+          </div>
+          <div class="progress"><div class="progress__fill" style="width:40%"></div></div>
+          <div class="body">
+            <h1 class="h1">這趟有發生<br>新的車損嗎？</h1>
+            <p class="sub">包含擦撞、刮痕、凹陷等，<br>誠實回報有助於加速後續處理。</p>
+
+            <button class="opt" id="opt-ok">
+              <span class="opt__ic opt__ic--ok">✓</span>
+              <span>
+                <span class="opt__t">沒問題</span>
+                <span class="opt__d">這趟沒有發生新的車損</span>
+              </span>
+            </button>
+
+            <button class="opt" id="opt-bad">
+              <span class="opt__ic opt__ic--bad">!</span>
+              <span>
+                <span class="opt__t">有，我要回報</span>
+                <span class="opt__d">這趟發生了擦撞或其他損傷</span>
+              </span>
+            </button>
+
+            <p class="reward">✦ 誠實回報可獲得綠色里程點數</p>
+          </div>
+        </section>
+
+        <!-- ══════════ R6 拍照序列（C1）══════════ -->
+        <section class="screen" id="screen-camera">
+          <div class="cam">
+            <img id="preview" alt="">
+            <div class="cam__note" id="cam-note"></div>
+
+            <div class="watermark">車號：<span data-plate>RCG-2235</span></div>
+            <div class="hint-lowlight" id="hint-lowlight">環境目前看起來很暗，建議開啟閃光燈拍照 ↓</div>
+
+            <div class="cam__top">
+              <div>
+                <div class="cam__title" id="cam-title">加油卡／停車卡</div>
+                <div class="cam__subtitle" id="cam-subtitle">於駕駛座上方的遮陽板</div>
+              </div>
+              <button class="cam__done" id="cam-done" disabled>完成</button>
+            </div>
+
+            <div class="cam__bottom">
+              <button class="flashbtn" id="flashbtn" data-mode="off">⚡</button>
+              <div class="slots" id="slots"></div>
+              <button class="shutter" id="shutter"></button>
+            </div>
+
+            <div class="blocker" id="blocker">
+              <div class="blocker__icon"></div>
+              <div class="blocker__text">請將手機橫拿再拍攝</div>
+              <div class="blocker__sub">橫式拍攝才能同時涵蓋完整車身與車牌，也讓後續辨識的方向一致。</div>
+            </div>
+          </div>
+        </section>
+
+        <!-- ══════════ R8 內裝髒污攔截【核心】══════════ -->
+        <section class="screen" id="screen-dirty">
+          <div class="navbar">
+            <button class="navbar__btn"></button>
+            <div class="navbar__title">還車拍照</div>
+            <button class="navbar__btn">☏</button>
+          </div>
+          <div class="progress"><div class="progress__fill" style="width:75%"></div></div>
+          <div class="body">
+            <h1 class="h1">車內看起來<br>需要整理一下</h1>
+            <p class="sub">AI 判定內裝清潔度為「髒汙」</p>
+            <div id="dirty-thumb"></div>
+            <p style="font-size:13.5px;line-height:1.8;color:#3d3d3d;text-align:center;margin:18px 4px 0">
+              下一位使用者會看到現在這個狀態。<br>整理一下再還車，可以獲得綠色里程點數。
+            </p>
+          </div>
+          <div class="footer">
+            <button class="btn btn--red" id="btn-clean">整理好了，重拍</button>
+            <button class="btn-link" id="btn-dirty-skip">仍要還車</button>
+          </div>
+        </section>
+
+        <!-- ══════════ R9 提供停車位置【外殼】══════════ -->
+        <section class="screen" id="screen-parkinfo">
+          <div class="navbar">
+            <button class="navbar__btn"></button>
+            <div class="navbar__title">提供停車位置</div>
+            <button class="navbar__btn">☏</button>
+          </div>
+          <div class="progress"><div class="progress__fill" style="width:85%"></div></div>
+          <div class="body">
+            <h1 class="h1">幫助下一位用戶找車吧</h1>
+            <p style="font-size:12.5px;line-height:1.8;margin:0 0 18px">
+              <b style="color:var(--irent-red)">路邊停車</b>：請【描述】停車位置並【拍攝】車輛停放環境（含車輛）<br>
+              <b style="color:var(--irent-red)">停車場停車</b>：請【描述】「還車樓層和停車格號碼」並【拍攝】車輛停放環境（含車輛）
+            </p>
+            <input id="park-text" placeholder="XX 路 X 號 / XX 店家前 / B3–151"
+                   style="width:100%;padding:14px;border:0;border-radius:10px;background:var(--surface);font-family:inherit;font-size:14px">
+            <div style="text-align:center;color:var(--muted);font-size:12px;margin:16px 0">且</div>
+            <div style="display:flex;gap:10px;align-items:flex-start">
+              <button id="park-shot" style="width:74px;height:74px;border:0;border-radius:10px;background:var(--surface);font-size:22px;cursor:pointer">📷</button>
+              <div id="park-thumb" style="flex:1"></div>
+            </div>
+            <div style="font-size:11.5px;color:var(--muted);margin-top:6px">直接拍攝</div>
+          </div>
+          <div class="footer">
+            <button class="btn btn--red" id="btn-park-next" disabled>下一步</button>
+            <button class="btn-link" id="btn-park-skip">略過</button>
+          </div>
+        </section>
+
+        <!-- ══════════ R10/R11 鎖車 · 還車成功【外殼】══════════ -->
+        <section class="screen" id="screen-success">
+          <div class="navbar">
+            <button class="navbar__btn"></button>
+            <div class="navbar__title">還車完成</div>
+            <button class="navbar__btn">☏</button>
+          </div>
+          <div class="progress"><div class="progress__fill" style="width:100%"></div></div>
+          <div class="body" style="text-align:center">
+            <div style="font-size:52px;color:var(--ok);margin-top:20px">🔒</div>
+            <h1 class="h1">還車成功</h1>
+            <p class="sub" id="success-summary"></p>
+            <div class="card" style="text-align:left">
+              <div class="row"><span>車號</span><b>RCG-2235</b></div>
+              <div class="row"><span>租用時間</span><b>00:41:20</b></div>
+              <div class="row"><span>還車地點</span><b id="success-loc">路邊停車格</b></div>
+            </div>
+            <div class="placeholder" style="height:90px">
+              街景／現場照【外殼】
+            </div>
+          </div>
+          <div class="footer">
+            <button class="btn btn--red" data-restart>再跑一次</button>
+          </div>
+        </section>
+
+        <!-- ══════════ R12 訂單明細 · 車況紀錄【核心】══════════ -->
+        <section class="screen" id="screen-record">
+          <div class="navbar">
+            <button class="navbar__btn" data-back="screen-success">‹</button>
+            <div class="navbar__title">車況紀錄</div>
+            <button class="navbar__btn">☏</button>
+          </div>
+          <div class="progress"><div class="progress__fill" style="width:100%"></div></div>
+          <div class="body">
+            <div id="record-verdict"></div>
+            <div class="sectionlabel">本次還車照片</div>
+            <div class="photogrid" id="record-photos"></div>
+            <div class="sectionlabel">判定明細</div>
+            <div class="meta" id="record-meta"></div>
+          </div>
+          <div class="footer">
+            <button class="btn btn--red" data-restart>再跑一次</button>
+          </div>
+        </section>
+
+        <!-- ══════════ R1 還車前檢查清單【外殼】══════════ -->
+        <div class="scrim scrim--center" id="scrim-checklist">
+          <div class="sheet sheet--center">
+            <h2 class="sheet__h">還車前請檢查一下：</h2>
+            <ul class="check">
+              <li>還車位置符合規範</li>
+              <li>個人物品沒有遺漏</li>
+              <li>停車卡、加油卡、行照放回車內</li>
+              <li>引擎、電源關閉</li>
+              <li>大燈、車內燈都有關</li>
+              <li>鑰匙有扣回鑰匙座</li>
+              <li>車門車窗緊閉</li>
+            </ul>
+            <p class="sheet__p" style="text-align:center">點「下一步」即停止計費</p>
+            <button class="btn btn--blue" id="btn-checklist-next">下一步</button>
+            <button class="btn-link" id="btn-checklist-cancel">取消</button>
+          </div>
+        </div>
+
+        <!-- ══════════ R3 停車場還車提醒【外殼】══════════ -->
+        <div class="scrim scrim--center" id="scrim-parking">
+          <div class="sheet sheet--center">
+            <div style="text-align:center;font-size:34px">Ⓟ</div>
+            <h2 class="sheet__h" style="text-align:center">停車場還車提醒</h2>
+            <p class="sheet__p">請您再次確認車輛已停放於 iRent 配合之調度停車場。並且未占用充電車格／婦幼保障車格／身心障礙保障車格。</p>
+            <ol>
+              <li>若車輛停放於非調度停車場，請先「取消還車」並返回用車狀態，將車輛移至合規的還車區域。</li>
+              <li>您可透過首頁地圖，查看鄰近的調度停車場，或選擇合法的路邊停車格進行還車。</li>
+              <li>確認車輛停妥後，請重新操作還車流程。</li>
+            </ol>
+            <button class="btn btn--blue" id="btn-parking-ok">已確認位置，繼續還車</button>
+            <button class="btn-link" id="btn-parking-cancel">取消還車</button>
+          </div>
+        </div>
+
+        <!-- ══════════ C3 補拍提示 ══════════ -->
+        <div class="scrim" id="scrim-recheck">
+          <div class="sheet">
+            <h2 class="sheet__h">這幾張可能不夠清楚</h2>
+            <p class="sheet__p">補拍後車況記錄會更完整，日後若有爭議也更能保障您的權益。</p>
+            <div id="issue-list"></div>
+            <div style="margin-top:16px">
+              <button class="btn btn--red" id="btn-goretake">去補拍</button>
+              <button class="btn-link" id="btn-skip">仍要繼續</button>
+            </div>
+          </div>
+        </div>
+
+        <!-- ══════════ C4 合併免責聲明 ══════════ -->
+        <div class="scrim scrim--center" id="scrim-waiver">
+          <div class="sheet sheet--center">
+            <h2 class="sheet__h">送出前請確認</h2>
+            <p class="sheet__p">本次車況記錄缺少以下項目：</p>
+            <ul class="waiver-list" id="waiver-list"></ul>
+            <p class="legal">
+              這些缺項可能導致日後發生車損爭議時，無法證明車輛在您還車當下的實際狀況。
+              若後續經 AI 判定及人工複核確認車輛存在新增車損，相關責任認定將以現有照片為準。
+            </p>
+            <button class="btn btn--red" id="btn-agree">我了解，仍要送出</button>
+            <button class="btn-link" id="btn-back">返回補拍</button>
+          </div>
+        </div>
+
+        <!-- ══════════ R12 推播 ══════════ -->
+        <div class="push" id="push">
+          <div class="push__hd"><span>▣</span><b>iRent</b><span>· 現在</span></div>
+          <div class="push__t" id="push-title"></div>
+          <div class="push__d" id="push-desc"></div>
+        </div>
+
+      </div><!-- /viewport -->
+
+      <div class="device__island"></div>
+      <div class="device__home"></div>
+    </div>
+  </div>
+
+  <aside class="devbar">
+    <h3>demo 控制</h3>
+    <p class="devbar__note">模擬器外的操作面板，正式版不存在。</p>
+
+    <label for="mock-scenario">四角照判定情境</label>
+    <select id="mock-scenario">
+      <option value="pass">全部通過</option>
+      <option value="missing">缺左後角度（方向拍成右後）＋無完整車牌</option>
+      <option value="plate">僅無完整車牌</option>
+    </select>
+
+    <label for="mock-clean">內裝清潔度（環節二）</label>
+    <select id="mock-clean">
+      <option value="dirty">髒汙 → 鎖車前攔截</option>
+      <option value="normal">普通</option>
+      <option value="clean">乾淨</option>
+    </select>
+
+    <label for="mock-damage">新車損比對（環節二．背景）</label>
+    <select id="mock-damage">
+      <option value="none">無新增車損</option>
+      <option value="found">偵測到新增車損</option>
+    </select>
+
+    <div class="devbar__path" id="path-state">目前路徑：尚未開始</div>
+    <div class="devbar__state" id="sensor-state">感測器：未啟用</div>
+  </aside>
+</div>
+
+<script>
+"use strict";
+
+/* ═══════════════════════════════════════════════════════════
+   設定
+   ═══════════════════════════════════════════════════════════ */
+
+const PLATE = "RCG-2235";
+const DIR = "asset/";
+
+/* R6 拍照序列：前 7 格必填，後 4 格為 optional 的車損特寫。
+   photo=null 代表素材待補，按快門會產生標示用的佔位圖。 */
+const SLOT_DEFS = [
+  { key:"fuel_card",       label:"卡片", title:"加油卡／停車卡", sub:"於駕駛座上方的遮陽板", photo:null, todo:"加油卡／停車卡（駕駛座遮陽板）" },
+  { key:"interior_front",  label:"前座", title:"車內裝（前座）", sub:"請拍攝前座照片",       photo:null, todo:"車內前座" },
+  { key:"interior_rear",   label:"後座", title:"車內裝（後座）", sub:"請拍攝後座照片",       photo:null, todo:"車內後座" },
+  { key:"front_left",      label:"左前", title:"車身拍照", sub:"請拍攝車輛四角（含車牌）" },
+  { key:"front_right",     label:"右前", title:"車身拍照", sub:"請拍攝車輛四角（含車牌）" },
+  { key:"rear_left",       label:"左後", title:"車身拍照", sub:"請拍攝車輛四角（含車牌）" },
+  { key:"rear_right",      label:"右後", title:"車身拍照", sub:"請拍攝車輛四角（含車牌）" },
+];
+const EXTERIOR = ["front_left","front_right","rear_left","rear_right"];
+const SLOT_NAME = Object.fromEntries(SLOT_DEFS.map(s => [s.key, s.label]));
+const INTERIOR = ["interior_front","interior_rear"];
+
+/* 車外四角的四張照片，依情境不同（與 取車拍照.html 共用同一組素材） */
+const SCENARIOS = {
+  pass:{
+    photos:["rcg2235-front-left-pickup.jpg","rcg2235-front-right-pickup.jpg",
+            "rcg2235-rear-left-pickup.jpg","rcg2235-rear-right-pickup.jpg"],
+    judgement:{ coverage:{ missing:[] }, plate:{ complete:true, best_confidence:0.81 } },
+  },
+  missing:{
+    // 第 3 格該拍左後，卻又拍了一張右後 → 角度覆蓋缺 rear_left
+    photos:["rcg2235-front-left-return.jpg","rcg2235-front-right-return.jpg",
+            "rcg2235-rear-right-return.jpg","rcg2235-rear-right-pickup.jpg"],
+    judgement:{ coverage:{ missing:["rear_left"], reason:"方向拍成右後" },
+                plate:{ complete:false, best_confidence:0.43 } },
+  },
+  plate:{
+    photos:["rcg2235-front-left-return.jpg","rcg2235-front-right-return.jpg",
+            "rcg2235-rear-left-return.jpg","rcg2235-rear-right-return.jpg"],
+    judgement:{ coverage:{ missing:[] }, plate:{ complete:false, best_confidence:0.38 } },
+  },
+};
+const RETAKE_PHOTOS = {
+  front_left:"rcg2235-front-left-pickup.jpg",
+  front_right:"rcg2235-front-right-pickup.jpg",
+  rear_left:"rcg2235-rear-left-pickup.jpg",
+  rear_right:"rcg2235-rear-right-pickup.jpg",
+};
+
+/* 車損特寫：素材待補 ③（見 asset/README.md）。填檔名即自動生效。 */
+const DAMAGE_PHOTOS = [];
+const DAMAGE_MAX = 4;
+
+const BLUR_THRESHOLD = 60;
+const DARK_THRESHOLD = 62;
+
+/* ═══════════════════════════════════════════════════════════
+   狀態
+   ═══════════════════════════════════════════════════════════ */
+
+const state = {
+  scenario:"pass", cleanliness:"dirty", damageVerdict:"none",
+  location:null,               // "roadside" | "lot"
+  postReport:null,             // "none" | "damaged"
+  shots:SLOT_DEFS.map(s => ({ ...s, dataUrl:null, blurVar:null, flagged:false })),
+  damageShots:[],
+  activeIdx:0,
+  retakeOnly:null,
+  retaken:new Set(),
+  dirtyResolved:false, dirtyPending:false, cleanedByUser:false, parkShot:false,
+  isLandscape:true, sensorAvailable:false,
+  issues:[],
+};
+
+const $  = s => document.querySelector(s);
+const $$ = s => [...document.querySelectorAll(s)];
+
+/* 必填 7 格是否拍滿——決定相機在「必填段」還是「車損段」 */
+const requiredDone = () => state.shots.every(s => s.dataUrl);
+
+/* ═══════════════════════════════════════════════════════════
+   模擬器：分頁切換 + 旋轉 + 縮放
+   ═══════════════════════════════════════════════════════════ */
+
+const PORTRAIT = { w:390, h:844 };
+const BEZEL = 12;
+const BOX_W = PORTRAIT.w + BEZEL*2;
+const BOX_H = PORTRAIT.h + BEZEL*2;
+let deviceLandscape = false;
+
+function show(id){
+  $$(".screen").forEach(s => s.classList.toggle("on", s.id === id));
+  $("#device").classList.toggle("dark-ui", id === "screen-camera");
+  updateOrientation();
+}
+
+/* 只有「相機頁在前景、且沒有任何 sheet 蓋著」時才橫向 */
+function updateOrientation(){
+  const camOn = $("#screen-camera").classList.contains("on");
+  const sheetOn = $$(".scrim").some(s => s.classList.contains("on"));
+  const landscape = camOn && !sheetOn;
+  if (landscape === deviceLandscape) return;
+  deviceLandscape = landscape;
+  $("#device").classList.toggle("landscape", landscape);
+  fitDevice();
+}
+
+function fitDevice(){
+  // 旋轉後視覺占地寬高對調，但版面盒永遠是 BOX_W×BOX_H
+  const visW0 = deviceLandscape ? BOX_H : BOX_W;
+  const visH0 = deviceLandscape ? BOX_W : BOX_H;
+  const sideBySide = window.innerWidth > 1200;
+  const availW = window.innerWidth - (sideBySide ? 300 + 32 + 48 : 48);
+  const availH = window.innerHeight - (sideBySide ? 48 : 240);
+  const s = Math.max(Math.min(1, availW/visW0, availH/visH0), 0.4);
+  const dev = $("#device");
+  dev.style.transform = "rotate(" + (deviceLandscape ? -90 : 0) + "deg) scale(" + s + ")";
+  dev.style.margin = ((visH0*s - BOX_H)/2) + "px " + ((visW0*s - BOX_W)/2) + "px";
+}
+window.addEventListener("resize", fitDevice);
+
+const openSheet  = id => { $(id).classList.add("on");    updateOrientation(); };
+const closeSheet = id => { $(id).classList.remove("on"); updateOrientation(); };
+
+$$("[data-back]").forEach(b => b.addEventListener("click", () => show(b.dataset.back)));
+$$("[data-restart]").forEach(b => b.addEventListener("click", () => location.reload()));
+const setPath = t => $("#path-state").textContent = "目前路徑：" + t;
+
+/* ═══════════════════════════════════════════════════════════
+   快門層硬擋（ADR 0003）
+   ─ 刻意不用 screen.orientation，它在旋轉鎖定時會騙人
+   ═══════════════════════════════════════════════════════════ */
+
+function onOrientation(e){
+  if (e.gamma === null || e.gamma === undefined) return;
+  state.sensorAvailable = true;
+  const landscape = Math.abs(e.gamma) > 45;
+  if (landscape !== state.isLandscape){ state.isLandscape = landscape; renderBlocker(); }
+  $("#sensor-state").textContent = "感測器：已啟用（" + (landscape ? "橫置" : "直立/平放") + "）";
+}
+
+async function enableSensor(){
+  const DOE = window.DeviceOrientationEvent;
+  if (!DOE){ $("#sensor-state").textContent = "感測器：不支援，硬擋停用"; return; }
+  try{
+    if (typeof DOE.requestPermission === "function"){
+      if (await DOE.requestPermission() !== "granted"){
+        $("#sensor-state").textContent = "感測器：未授權，硬擋停用"; return;
+      }
+    }
+    window.addEventListener("deviceorientation", onOrientation);
+    setTimeout(() => {
+      if (!state.sensorAvailable) $("#sensor-state").textContent = "感測器：無回應（桌機），硬擋停用";
+    }, 1200);
+  }catch(_){ $("#sensor-state").textContent = "感測器：初始化失敗，硬擋停用"; }
+}
+
+function renderBlocker(){
+  const blocked = state.sensorAvailable && !state.isLandscape;
+  $("#blocker").classList.toggle("on", blocked);
+  $("#shutter").disabled = blocked || currentSource() === undefined;
+}
+
+/* ═══════════════════════════════════════════════════════════
+   影像處理（模糊 / 亮度是真的在算）
+   ═══════════════════════════════════════════════════════════ */
+
+const cv = document.createElement("canvas");
+const ctx = cv.getContext("2d", { willReadFrequently:true });
+
+function laplacianVariance(w, h){
+  const d = ctx.getImageData(0, 0, w, h).data;
+  const g = new Float32Array(w * h);
+  for (let i = 0, p = 0; i < d.length; i += 4, p++)
+    g[p] = 0.299*d[i] + 0.587*d[i+1] + 0.114*d[i+2];
+  let sum = 0, sumSq = 0, n = 0;
+  for (let y = 1; y < h - 1; y++)
+    for (let x = 1; x < w - 1; x++){
+      const i = y*w + x;
+      const lap = 4*g[i] - g[i-1] - g[i+1] - g[i-w] - g[i+w];
+      sum += lap; sumSq += lap*lap; n++;
+    }
+  return sumSq/n - (sum/n)**2;
+}
+
+function averageLuma(w, h){
+  const d = ctx.getImageData(0, 0, w, h).data;
+  let sum = 0;
+  for (let i = 0; i < d.length; i += 4) sum += 0.299*d[i] + 0.587*d[i+1] + 0.114*d[i+2];
+  return sum / (d.length/4);
+}
+
+function stampPlate(w, h){
+  const text = "車號：" + PLATE;
+  ctx.font = "600 22px -apple-system, 'PingFang TC', sans-serif";
+  const tw = ctx.measureText(text).width;
+  ctx.fillStyle = "rgba(0,0,0,.55)";
+  if (ctx.roundRect){                          // Safari < 16.4 沒有 roundRect
+    ctx.beginPath(); ctx.roundRect((w-tw)/2 - 14, h-52, tw+28, 34, 17); ctx.fill();
+  }else{
+    ctx.fillRect((w-tw)/2 - 14, h-52, tw+28, 34);
+  }
+  ctx.fillStyle = "#fff";
+  ctx.fillText(text, (w-tw)/2, h-29);
+}
+
+function renderShot(src, sw, sh){
+  const w = 1280, h = 720;
+  cv.width = w; cv.height = h;
+  const sr = sw/sh, tr = w/h;
+  let cw, ch, cx, cy;
+  if (sr > tr){ ch = sh; cw = ch*tr; cx = (sw-cw)/2; cy = 0; }
+  else        { cw = sw; ch = cw/tr; cx = 0; cy = (sh-ch)/2; }
+  ctx.drawImage(src, cx, cy, cw, ch, 0, 0, w, h);
+  const blurVar = laplacianVariance(w, h);
+  stampPlate(w, h);
+  return { dataUrl:cv.toDataURL("image/jpeg", 0.85), blurVar };
+}
+
+/* 素材未到位時的替代圖 */
+function renderPlaceholderShot(mark, label){
+  const w = 1280, h = 720;
+  cv.width = w; cv.height = h;
+  ctx.fillStyle = "#2a2d33"; ctx.fillRect(0, 0, w, h);
+  ctx.strokeStyle = "#565b64"; ctx.lineWidth = 4; ctx.setLineDash([16, 12]);
+  ctx.strokeRect(40, 40, w-80, h-80);
+  ctx.setLineDash([]);
+  ctx.fillStyle = "#9aa0a8"; ctx.textAlign = "center";
+  ctx.font = "600 40px -apple-system, 'PingFang TC', sans-serif";
+  ctx.fillText("素材待補 " + mark, w/2, h/2 - 12);
+  ctx.font = "400 26px -apple-system, 'PingFang TC', sans-serif";
+  ctx.fillText(label, w/2, h/2 + 34);
+  ctx.textAlign = "start";
+  stampPlate(w, h);
+  return { dataUrl:cv.toDataURL("image/jpeg", 0.85), blurVar:null };
+}
+
+/* ═══════════════════════════════════════════════════════════
+   取景
+   ═══════════════════════════════════════════════════════════ */
+
+const imgCache = new Map();
+function loadImage(path){
+  if (imgCache.has(path)) return imgCache.get(path);
+  const p = new Promise((res, rej) => {
+    const im = new Image();
+    im.onload = () => res(im);
+    im.onerror = () => rej(new Error(path));
+    im.src = encodeURI(path);
+  });
+  imgCache.set(path, p);
+  return p;
+}
+
+/* 某一格必填 slot 該取到哪張照片；null = 素材待補 */
+function photoForSlot(i){
+  const key = state.shots[i].key;
+  const e = EXTERIOR.indexOf(key);
+  return e === -1 ? null : DIR + SCENARIOS[state.scenario].photos[e];
+}
+
+/* 路徑；null = 走佔位圖；undefined = 沒東西可拍了 */
+function currentSource(){
+  if (state.retakeOnly !== null){
+    const key = state.shots[state.retakeOnly].key;
+    return RETAKE_PHOTOS[key] ? DIR + RETAKE_PHOTOS[key] : null;
+  }
+  if (!requiredDone()) return photoForSlot(state.activeIdx);
+  if (state.damageShots.length >= DAMAGE_MAX) return undefined;
+  return DAMAGE_PHOTOS[state.damageShots.length] || null;
+}
+
+/* 目前這一格要拍什麼（給佔位圖與提示用） */
+function currentTodo(){
+  if (state.retakeOnly !== null) return state.shots[state.retakeOnly].todo;
+  if (!requiredDone()) return state.shots[state.activeIdx].todo;
+  return "車損特寫 " + (state.damageShots.length + 1);
+}
+const currentMark = () => (!requiredDone() || state.retakeOnly !== null) ? "⑤" : "③";
+
+async function renderViewfinder(){
+  const src = currentSource();
+  const pv = $("#preview"), note = $("#cam-note");
+
+  if (src === undefined){
+    pv.style.display = "none";
+    note.className = "cam__note on";
+    note.innerHTML = "已經都拍完囉<br><span style='font-size:12px'>請按右上角「完成」</span>";
+    $("#hint-lowlight").classList.remove("on");
+  }else if (src === null){
+    pv.style.display = "none";
+    note.className = "cam__note on";
+    note.innerHTML = "<div class='box'>素材待補 " + currentMark() + " · " + currentTodo() +
+      "<br>按快門仍可繼續，會填入標示用的佔位圖</div>";
+    $("#hint-lowlight").classList.remove("on");
+  }else{
+    note.className = "cam__note";
+    pv.style.display = "block";
+    pv.src = encodeURI(src);
+    try{
+      const im = await loadImage(src);
+      cv.width = 64; cv.height = 36;
+      ctx.drawImage(im, 0, 0, 64, 36);
+      $("#hint-lowlight").classList.toggle("on", averageLuma(64, 36) < DARK_THRESHOLD);
+    }catch(_){}
+  }
+  renderBlocker();
+}
+
+/* 縮圖列：必填 7 格 ＋（解鎖後）車損 4 格，是一條連續序列 */
+function renderSlots(){
+  const wrap = $("#slots");
+  wrap.innerHTML = "";
+  const inDamage = requiredDone() && state.retakeOnly === null;
+  const nD = state.damageShots.length;
+  const cur = state.retakeOnly ?? state.activeIdx;
+
+  state.shots.forEach((s, i) => {
+    const el = document.createElement("div");
+    el.className = "slot" + (!inDamage && i === cur ? " active" : "") + (s.flagged ? " flagged" : "");
+    // 素材待補 ④：未拍時應為示意圖，暫以文字代替
+    el.innerHTML = s.dataUrl
+      ? '<img src="' + s.dataUrl + '" alt=""><span class="slot__flag"></span>'
+      : s.label;
+    wrap.appendChild(el);
+  });
+
+  if (requiredDone()){
+    for (let i = 0; i < DAMAGE_MAX; i++){
+      const shot = state.damageShots[i];
+      const el = document.createElement("div");
+      el.className = "slot" + (shot ? "" : " empty") + (inDamage && i === nD ? " active" : "");
+      el.innerHTML = shot ? '<img src="' + shot.dataUrl + '" alt="">' : "損" + (i + 1);
+      wrap.appendChild(el);
+    }
+  }
+
+  if (state.retakeOnly !== null){
+    const s = state.shots[state.retakeOnly];
+    $("#cam-title").textContent = s.title;
+    $("#cam-subtitle").textContent = "補拍「" + s.label + "」";
+    $("#cam-done").textContent = "完成";
+    $("#cam-done").disabled = true;
+  }else if (!requiredDone()){
+    const s = state.shots[state.activeIdx];
+    $("#cam-title").textContent = s.title;
+    $("#cam-subtitle").textContent = s.sub;
+    $("#cam-done").textContent = "完成";
+    $("#cam-done").disabled = true;               // 前 7 格未滿不能離開
+  }else{
+    $("#cam-title").textContent = "車損拍照";
+    $("#cam-subtitle").textContent = nD >= DAMAGE_MAX
+      ? "已拍滿 4 張"
+      : (state.postReport === "damaged"
+          ? "請拍攝您剛才回報的損傷處（"
+          : "若有發現損傷可以補拍（") + (nD + 1) + " / " + DAMAGE_MAX + "）";
+    $("#cam-done").textContent = nD === 0 ? "略過" : "完成";
+    $("#cam-done").disabled = false;
+  }
+}
+
+/* ═══════════════════════════════════════════════════════════
+   快門
+   ─ 拍照當下不做任何內容檢查，全部收斂到 C2（見規格 C1／C2）
+   ═══════════════════════════════════════════════════════════ */
+
+$("#shutter").addEventListener("click", async () => {
+  if ($("#shutter").disabled) return;
+  const src = currentSource();
+  if (src === undefined) return;
+
+  let shot;
+  if (src === null){
+    shot = renderPlaceholderShot(currentMark(), currentTodo());
+  }else{
+    let im;
+    try{ im = await loadImage(src); }
+    catch(_){
+      alert("找不到示範照片：" + src + "\n\n請從專案根目錄起 server：\npython3 -m http.server 8000");
+      return;
+    }
+    shot = renderShot(im, im.naturalWidth, im.naturalHeight);
+  }
+
+  // 車損段
+  if (state.retakeOnly === null && requiredDone()){
+    state.damageShots.push(shot);
+    renderSlots(); renderViewfinder();
+    return;
+  }
+
+  // 必填段（含補拍）
+  const idx = state.retakeOnly ?? state.activeIdx;
+  const s = state.shots[idx];
+  s.dataUrl = shot.dataUrl;
+  s.blurVar = shot.blurVar;
+
+  if (state.retakeOnly !== null){
+    const wasInterior = INTERIOR.includes(s.key);
+    state.retaken.add(s.key);
+    state.retakeOnly = null;
+    renderSlots(); renderViewfinder();
+    // 重拍內裝 → 重跑清潔度分類（R8 主鈕的回路）
+    if (wasInterior && state.dirtyPending){ state.dirtyPending = false; resolveDirty(); return; }
+    runJudgement();
+    return;
+  }
+  const next = state.shots.findIndex(x => !x.dataUrl);
+  state.activeIdx = next === -1 ? null : next;
+  renderSlots(); renderViewfinder();
+});
+
+/* ═══════════════════════════════════════════════════════════
+   C2 拍後檢查 — 這支函式就是後端 API 的接縫
+   ═══════════════════════════════════════════════════════════ */
+
+async function fetchJudgement(){
+  const photos = state.shots.map(s => ({
+    slot:s.key,
+    blur:s.blurVar !== null && s.blurVar < BLUR_THRESHOLD,
+    blur_variance:s.blurVar === null ? null : Math.round(s.blurVar),
+    distance:"ok",       // TODO 車輛偵測框佔比（僅車外照）
+    dirty_lens:false,    // TODO
+    angle:null,          // TODO 角度分類模型（尚待開發）
+  }));
+  const j = SCENARIOS[state.scenario].judgement;
+  return {
+    photos,
+    coverage:{ ...j.coverage,
+               missing:(j.coverage.missing || []).filter(k => !state.retaken.has(k)) },
+    plate:j.plate,
+    report_unevidenced: state.postReport === "damaged" && state.damageShots.length === 0,
+  };
+}
+
+function toIssues(j){
+  const out = [];
+  j.photos.forEach((p, i) => {
+    if (p.blur) out.push({
+      idx:i,
+      title:"「" + SLOT_NAME[p.slot] + "」不夠清晰",
+      desc:"清晰度 " + p.blur_variance + "，低於可辨識門檻",
+      waiver:"「" + SLOT_NAME[p.slot] + "」照片模糊",
+    });
+  });
+  (j.coverage.missing || []).forEach(key => {
+    out.push({
+      idx:state.shots.findIndex(s => s.key === key),
+      title:"缺少車子" + SLOT_NAME[key] + "的照片",
+      desc:"原因：" + (j.coverage.reason || "未涵蓋此角度"),
+      waiver:"缺少「" + SLOT_NAME[key] + "」角度",
+    });
+  });
+  if (!j.plate.complete) out.push({
+    idx:null,
+    title:"四張都沒有拍到完整車牌",
+    desc:"最高信心度 " + j.plate.best_confidence + "，低於 0.6 門檻",
+    waiver:"無任一張拍到完整車牌",
+  });
+  if (j.report_unevidenced) out.push({
+    idx:null,
+    title:"您回報了有新車損，但沒有拍下損傷處",
+    desc:"沒有照片，客服無法確認問題所在",
+    waiver:"回報有車損但未拍攝車損照",
+  });
+  return out;
+}
+
+async function runJudgement(){
+  const j = await fetchJudgement();
+  state.issues = toIssues(j);
+  state.shots.forEach((s, i) => s.flagged = state.issues.some(x => x.idx === i));
+  renderSlots();
+  if (state.issues.length === 0){ afterCheck(); return; }
+  renderRecheck();
+  openSheet("#scrim-recheck");
+}
+
+$("#cam-done").addEventListener("click", runJudgement);
+
+/* ── C3 補拍提示 ── */
+function renderRecheck(){
+  const list = $("#issue-list");
+  list.innerHTML = "";
+  state.issues.forEach(issue => {
+    const row = document.createElement("div");
+    row.className = "issue";
+    row.innerHTML =
+      (issue.idx !== null && state.shots[issue.idx].dataUrl
+        ? '<img class="issue__thumb" src="' + state.shots[issue.idx].dataUrl + '" alt="">'
+        : '<div class="issue__thumb"></div>') +
+      '<div class="issue__body"><div class="issue__t">' + issue.title + '</div>' +
+      '<div class="issue__d">' + issue.desc + '</div></div>';
+    if (issue.idx !== null){
+      const btn = document.createElement("button");
+      btn.className = "issue__go";
+      btn.textContent = "補拍這張";
+      btn.onclick = () => startRetake(issue.idx);
+      row.appendChild(btn);
+    }
+    list.appendChild(row);
+  });
+}
+
+function startRetake(idx){
+  state.retakeOnly = idx;                    // ADR 0001：只補缺的那一項
+  closeSheet("#scrim-recheck");
+  renderSlots(); renderViewfinder();
+}
+
+$("#btn-goretake").addEventListener("click", () => {
+  const first = state.issues.find(i => i.idx !== null);
+  if (first) startRetake(first.idx);
+  else closeSheet("#scrim-recheck");
+});
+
+/* ── C4 免責聲明 ── */
+$("#btn-skip").addEventListener("click", () => {
+  const ul = $("#waiver-list");
+  ul.innerHTML = "";
+  state.issues.forEach(i => {
+    const li = document.createElement("li");
+    li.textContent = i.waiver;
+    ul.appendChild(li);
+  });
+  closeSheet("#scrim-recheck");
+  openSheet("#scrim-waiver");
+});
+
+$("#btn-back").addEventListener("click", () => {
+  closeSheet("#scrim-waiver");
+  openSheet("#scrim-recheck");
+});
+
+$("#btn-agree").addEventListener("click", () => {
+  console.log("[被動記錄] 免責聲明同意紀錄", {          // ADR 0001：不推播、不建待辦
+    order_id:"H123456",
+    missing_items:state.issues.map(i => i.waiver),
+    agreed_at:new Date().toISOString(),
+  });
+  // 不用 closeSheet：相機頁還在前景，會先轉橫再被下一頁轉直，閃一下
+  $("#scrim-waiver").classList.remove("on");
+  afterCheck();
+});
+
+/* ═══════════════════════════════════════════════════════════
+   R8 內裝髒污攔截（ADR 0004：唯一擋在鎖車前的 AI 判定）
+   ═══════════════════════════════════════════════════════════ */
+
+function afterCheck(){
+  if (state.cleanliness === "dirty" && !state.dirtyResolved){
+    state.dirtyPending = true;
+    const shot = state.shots.find(s => s.key === "interior_front");
+    $("#dirty-thumb").innerHTML = shot && shot.dataUrl
+      ? '<img src="' + shot.dataUrl + '" style="width:100%;border-radius:12px;display:block">'
+      : '<div class="placeholder" style="height:150px">素材待補 ⑤<br>髒汙的車內前座照</div>';
+    setPath("拍照完成 → 髒汙攔截");
+    show("screen-dirty");
+    return;
+  }
+  setPath("拍照完成 → 提供停車位置");
+  show("screen-parkinfo");
+}
+
+$("#btn-clean").addEventListener("click", () => {
+  // 只重拍該格，重拍後重跑分類
+  const idx = state.shots.findIndex(s => s.key === "interior_front");
+  state.retakeOnly = idx;
+  show("screen-camera");
+  renderSlots(); renderViewfinder();
+});
+
+/* 重拍完內裝之後的分類結果——demo 一律視為改善 */
+function resolveDirty(){
+  state.cleanliness = "normal";
+  state.dirtyResolved = true;
+  state.cleanedByUser = true;
+  setPath("髒汙攔截 → 已整理重拍 → 提供停車位置");
+  show("screen-parkinfo");
+}
+
+$("#btn-dirty-skip").addEventListener("click", () => {
+  // 不套 C4 免責聲明：髒汙是車況本身，照片就是完整證據（規格 R8）
+  state.dirtyResolved = true;
+  console.log("[訂單記錄] 使用者於髒汙攔截選擇「仍要還車」");
+  setPath("髒汙攔截 → 仍要還車 → 提供停車位置");
+  show("screen-parkinfo");
+});
+
+/* ═══════════════════════════════════════════════════════════
+   R9 提供停車位置【外殼】
+   ═══════════════════════════════════════════════════════════ */
+
+function syncParkNext(){
+  $("#btn-park-next").disabled = !($("#park-text").value.trim() && state.parkShot);
+}
+$("#park-text").addEventListener("input", syncParkNext);
+$("#park-shot").addEventListener("click", () => {
+  state.parkShot = true;
+  $("#park-thumb").innerHTML =
+    '<div class="placeholder" style="height:74px;font-size:11px">現場照【外殼】</div>';
+  syncParkNext();
+});
+$("#btn-park-next").addEventListener("click", lockAndFinish);
+$("#btn-park-skip").addEventListener("click", lockAndFinish);
+
+/* ═══════════════════════════════════════════════════════════
+   R10 鎖車 → R11 還車成功 → R12 背景比對
+   ═══════════════════════════════════════════════════════════ */
+
+function lockAndFinish(){
+  const bits = [];
+  bits.push(state.postReport === "damaged" ? "已記錄您的車損回報" : "未回報新車損");
+  bits.push(state.issues.length === 0 ? "照片全部通過檢查"
+                                      : "記錄 " + state.issues.length + " 項缺項與同意紀錄");
+  if (state.cleanedByUser) bits.push("已整理車內");
+  $("#success-summary").textContent = bits.join("，") + "。";
+  $("#success-loc").textContent = state.location === "lot" ? "iRent 調度停車場" : "路邊停車格";
+  setPath("已鎖車，車損比對在背景執行中");
+  show("screen-success");
+  setTimeout(runBackgroundVerdict, 2600);      // 非即時：不擋流程（ADR 0004）
+}
+
+/* 環節二．新車損比對（背景）→ 推播 → 車況紀錄頁 */
+function runBackgroundVerdict(){
+  const found = state.damageVerdict === "found";
+  const points = [];
+  if (!found && state.cleanliness !== "dirty") points.push("完好還車");
+  if (state.cleanedByUser) points.push("主動整理");
+
+  $("#push-title").textContent = found ? "本次還車偵測到車況異常" : "本次還車車況良好";
+  $("#push-desc").textContent = found
+    ? "AI 比對取車照後發現新增車損，客服將與您聯繫"
+    : (points.length ? "已發放綠色里程點數 " + (points.length * 50) + " 點" : "點按查看車況紀錄");
+  $("#push").classList.add("on");
+  setPath("背景比對完成 → 推播已送達");
+
+  $("#push").onclick = () => {
+    $("#push").classList.remove("on");
+    renderRecord(found, points);
+    show("screen-record");
+  };
+}
+
+function renderRecord(found, points){
+  $("#record-verdict").innerHTML =
+    '<div class="verdict ' + (found ? "verdict--warn" : "verdict--ok") + '">' +
+    '<div class="verdict__t">' + (found ? "偵測到新增車損" : "車況良好") + '</div>' +
+    '<div class="verdict__d">' + (found
+      ? "AI 已將取車照與還車照對齊比對，發現本次租用期間新增的損傷。客服將與您聯繫，您也可以在此提出申訴。"
+      : "取車與還車照片比對後，未發現新增車損。") + '</div></div>';
+
+  const now = new Date().toLocaleString("zh-TW");
+  $("#record-photos").innerHTML = state.shots.filter(s => s.dataUrl).map(s =>
+    '<figure><img src="' + s.dataUrl + '" alt="">' +
+    '<figcaption>' + s.label + '<br>' + now + '</figcaption></figure>').join("");
+
+  const cleanText = { dirty:"髒汙（須立即清潔）", normal:"普通", clean:"乾淨" }[state.cleanliness];
+  const rows = [
+    ["新車損比對", found ? "偵測到新增車損" : "無新增車損"],
+    ["內裝清潔度", cleanText],
+    ["使用者回報", state.postReport === "damaged" ? "有新車損" : "沒問題"],
+    ["車損特寫", state.damageShots.length + " 張"],
+    ["照片缺項", state.issues.length ? state.issues.map(i => i.waiver).join("、") : "無"],
+    ["綠色里程點數", points.length ? points.join("＋") + "，共 " + (points.length*50) + " 點" : "本次未發放"],
+  ];
+  $("#record-meta").innerHTML = rows.map(([k, v]) =>
+    '<div><b>' + k + '</b>：' + v + '</div>').join("");
+}
+
+/* ═══════════════════════════════════════════════════════════
+   外殼流程
+   ═══════════════════════════════════════════════════════════ */
+
+$("#btn-start-return").addEventListener("click", () => openSheet("#scrim-checklist"));
+$("#btn-checklist-cancel").addEventListener("click", () => closeSheet("#scrim-checklist"));
+$("#btn-checklist-next").addEventListener("click", () => {
+  closeSheet("#scrim-checklist");
+  setPath("已停止計費 → 選擇還車地點");
+  show("screen-location");
+});
+
+$$("[data-loc]").forEach(card => card.addEventListener("click", () => {
+  state.location = card.dataset.loc;
+  $$("[data-loc]").forEach(c => c.classList.toggle("sel", c === card));
+  $("#btn-loc-ok").disabled = false;
+}));
+
+$("#btn-loc-ok").addEventListener("click", () => {
+  if (state.location === "lot"){ openSheet("#scrim-parking"); return; }
+  show("screen-precheck");
+});
+$("#btn-parking-ok").addEventListener("click", () => {
+  closeSheet("#scrim-parking");
+  show("screen-precheck");
+});
+$("#btn-parking-cancel").addEventListener("click", () => {
+  closeSheet("#scrim-parking");
+  show("screen-location");                    // 取消還車 → 退回 R2
+});
+
+$("#btn-precheck-ok").addEventListener("click", () => show("screen-report"));
+
+/* R5 車況預先回報 */
+$("#opt-ok").addEventListener("click", () => {
+  state.postReport = "none";
+  setPath("回報「沒問題」→ 拍照序列");
+  enterCamera();
+});
+$("#opt-bad").addEventListener("click", () => {
+  state.postReport = "damaged";
+  setPath("回報「有新車損」→ 拍照序列");
+  enterCamera();
+});
+
+async function enterCamera(){
+  await enableSensor();          // 只要陀螺儀，不要相機
+  show("screen-camera");
+  renderSlots();
+  await renderViewfinder();
+}
+
+/* ── 閃光燈：mock 模式只切 UI ── */
+$("#flashbtn").addEventListener("click", e =>
+  e.currentTarget.dataset.mode = e.currentTarget.dataset.mode === "off" ? "on" : "off");
+
+$("#mock-scenario").addEventListener("change", e => state.scenario = e.target.value);
+$("#mock-clean").addEventListener("change", e => state.cleanliness = e.target.value);
+$("#mock-damage").addEventListener("change", e => state.damageVerdict = e.target.value);
+
+renderSlots();
+fitDevice();
+</script>
+</body>
+</html>
