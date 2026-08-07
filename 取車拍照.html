@@ -46,13 +46,13 @@ body{
 .device__screen{position:relative;width:100%;height:100%;border-radius:46px;overflow:hidden;background:#000}
 
 .device__island{
-  position:absolute;z-index:30;background:#000;border-radius:14px;
+  position:absolute;z-index:60;background:#000;border-radius:14px;
   left:50%;top:11px;transform:translateX(-50%);width:112px;height:30px;
   transition:all .45s cubic-bezier(.4,0,.2,1);
 }
 .device.landscape .device__island{left:11px;top:50%;transform:translateY(-50%);width:30px;height:112px}
 .device__home{
-  position:absolute;z-index:30;background:rgba(0,0,0,.32);border-radius:3px;
+  position:absolute;z-index:60;background:rgba(0,0,0,.32);border-radius:3px;
   left:50%;bottom:8px;transform:translateX(-50%);width:134px;height:5px;
   transition:all .45s cubic-bezier(.4,0,.2,1);
 }
@@ -202,6 +202,14 @@ body{
 @keyframes tilt{0%,20%{transform:rotate(0)}60%,100%{transform:rotate(-90deg)}}
 .blocker__text{font-size:17px;font-weight:600}
 .blocker__sub{font-size:13px;color:#b9bcc2;max-width:300px;line-height:1.6}
+
+/* 手機轉回直向時（補拍提示／免責聲明），相機的操作介面全部收起，
+   只留最後取景的那張照片當背景——拍照是橫的，其餘一律是直的。 */
+.device:not(.landscape) .cam__top,
+.device:not(.landscape) .cam__bottom,
+.device:not(.landscape) .watermark,
+.device:not(.landscape) .hint-lowlight,
+.device:not(.landscape) .blocker{display:none}
 
 /* ══════════ Sheet / Modal（限制在機身內）══════════ */
 .scrim{position:absolute;inset:0;background:rgba(0,0,0,.5);display:none;align-items:flex-end;justify-content:center;z-index:40}
@@ -564,15 +572,28 @@ let deviceLandscape = false;
 
 function show(id){
   $$(".screen").forEach(s => s.classList.toggle("on", s.id === id));
-  const cam = id === "screen-camera";
+  $("#device").classList.toggle("dark-ui", id === "screen-camera");
+  updateOrientation();
+}
+
+/* 只有「相機頁在前景、且沒有任何 sheet 蓋著」時才橫向。
+   補拍提示與免責聲明都是直向的頁面，跳出來時手機要轉回來。 */
+function updateOrientation(){
+  const camOn = $("#screen-camera").classList.contains("on");
+  const sheetOn = $$(".scrim").some(s => s.classList.contains("on"));
+  const landscape = camOn && !sheetOn;
+  if (landscape === deviceLandscape) return;
+
+  deviceLandscape = landscape;
   const dev = $("#device");
-  deviceLandscape = cam;
-  dev.classList.toggle("landscape", cam);
-  dev.classList.toggle("dark-ui", cam);
-  dev.style.setProperty("--screen-w", (cam ? PORTRAIT.h : PORTRAIT.w) + "px");
-  dev.style.setProperty("--screen-h", (cam ? PORTRAIT.w : PORTRAIT.h) + "px");
+  dev.classList.toggle("landscape", landscape);
+  dev.style.setProperty("--screen-w", (landscape ? PORTRAIT.h : PORTRAIT.w) + "px");
+  dev.style.setProperty("--screen-h", (landscape ? PORTRAIT.w : PORTRAIT.h) + "px");
   fitDevice();
 }
+
+const openSheet  = id => { $(id).classList.add("on");    updateOrientation(); };
+const closeSheet = id => { $(id).classList.remove("on"); updateOrientation(); };
 
 function fitDevice(){
   // 用目標尺寸算，不用 offsetWidth——寬高正在 transition，讀到的會是舊值
@@ -943,7 +964,7 @@ async function runJudgement(){
   renderSlots();
   if (state.issues.length === 0){ finish(); return; }
   renderRecheck();
-  $("#scrim-recheck").classList.add("on");
+  openSheet("#scrim-recheck");
 }
 
 $("#cam-done").addEventListener("click", () => {
@@ -978,14 +999,14 @@ function renderRecheck(){
 
 function startRetake(idx){
   state.retakeOnly = idx;                    // ADR 0001：只補缺的那一項，不整組重來
-  $("#scrim-recheck").classList.remove("on");
+  closeSheet("#scrim-recheck");
   renderSlots(); renderViewfinder();
 }
 
 $("#btn-goretake").addEventListener("click", () => {
   const first = state.issues.find(i => i.idx !== null);
   if (first) startRetake(first.idx);
-  else $("#scrim-recheck").classList.remove("on");
+  else closeSheet("#scrim-recheck");
 });
 
 /* ── C4 免責聲明 ── */
@@ -997,13 +1018,13 @@ $("#btn-skip").addEventListener("click", () => {
     li.textContent = i.waiver;
     ul.appendChild(li);
   });
-  $("#scrim-recheck").classList.remove("on");
-  $("#scrim-waiver").classList.add("on");
+  closeSheet("#scrim-recheck");
+  openSheet("#scrim-waiver");
 });
 
 $("#btn-back").addEventListener("click", () => {
-  $("#scrim-waiver").classList.remove("on");
-  $("#scrim-recheck").classList.add("on");
+  closeSheet("#scrim-waiver");
+  openSheet("#scrim-recheck");
 });
 
 $("#btn-agree").addEventListener("click", () => {
@@ -1013,6 +1034,7 @@ $("#btn-agree").addEventListener("click", () => {
     missing_items:state.issues.map(i => i.waiver),
     agreed_at:new Date().toISOString(),
   });
+  // 不用 closeSheet：關掉 sheet 的瞬間相機頁還在前景，會先轉橫再被 finish() 轉直，閃一下
   $("#scrim-waiver").classList.remove("on");
   finish();
 });
