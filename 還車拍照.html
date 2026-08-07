@@ -239,9 +239,23 @@ body{
 .blocker__text{font-size:17px;font-weight:600}
 .blocker__sub{font-size:13px;color:#b9bcc2;max-width:300px;line-height:1.6}
 
+/* R9 現場照的拍後確認列：⚡ ／ ✓ ／ 重拍（沿用現行 App 的樣式）*/
+.confirmbar{
+  position:absolute;left:0;right:0;bottom:0;z-index:9;
+  padding:26px 36px 16px 52px;display:none;align-items:center;gap:16px;
+  background:linear-gradient(0deg,rgba(0,0,0,.86),transparent);
+}
+.confirmbar.on{display:flex}
+.confirmbar__ok{
+  width:56px;height:56px;border-radius:50%;background:#fff;border:0;
+  font-size:24px;color:var(--irent-blue);cursor:pointer;margin:0 auto;
+}
+.confirmbar__redo{background:none;border:0;color:#fff;font-size:15px;font-family:inherit;cursor:pointer}
+
 /* 直向時相機介面收起，只留最後取景的照片當背景 */
 .device:not(.landscape) .cam__top,
 .device:not(.landscape) .cam__bottom,
+.device:not(.landscape) .confirmbar,
 .device:not(.landscape) .watermark,
 .device:not(.landscape) .hint-lowlight,
 .device:not(.landscape) .blocker{display:none}
@@ -481,10 +495,17 @@ body{
               <button class="cam__done" id="cam-done" disabled>完成</button>
             </div>
 
-            <div class="cam__bottom">
+            <div class="cam__bottom" id="cam-bottom">
               <button class="flashbtn" id="flashbtn" data-mode="off">⚡</button>
               <div class="slots" id="slots"></div>
               <button class="shutter" id="shutter"></button>
+            </div>
+
+            <!-- R9 現場照拍完的確認列 -->
+            <div class="confirmbar" id="confirmbar">
+              <button class="flashbtn" data-mode="off">⚡</button>
+              <button class="confirmbar__ok" id="confirm-ok">✓</button>
+              <button class="confirmbar__redo" id="confirm-redo">重拍</button>
             </div>
 
             <div class="blocker" id="blocker">
@@ -759,6 +780,10 @@ const RETAKE_PHOTOS = {
 const DAMAGE_PHOTOS = [];
 const DAMAGE_MAX = 4;
 
+/* R9 現場照：拍車輛停放環境（含車輛），用來幫下一位使用者找車。
+   跟車況證據照不同用途，但沿用同一台相機與同樣的橫式規則。 */
+const PARKING_PHOTO = "rcg2235-front-left-pickup.jpg";
+
 const BLUR_THRESHOLD = 60;
 const DARK_THRESHOLD = 62;
 
@@ -768,6 +793,8 @@ const DARK_THRESHOLD = 62;
 
 const state = {
   scenario:"pass", cleanliness:"dirty", damageVerdict:"none",
+  camMode:"sequence",          // "sequence" = R6 拍照序列；"parking" = R9 現場照
+  parkShotUrl:null,
   location:null,               // "roadside" | "lot"
   postReport:null,             // "none" | "damaged"
   shots:SLOT_DEFS.map(s => ({ ...s, dataUrl:null, blurVar:null, flagged:false })),
@@ -775,7 +802,7 @@ const state = {
   activeIdx:0,
   retakeOnly:null,
   retaken:new Set(),
-  dirtyResolved:false, dirtyPending:false, cleanedByUser:false, parkShot:false,
+  dirtyResolved:false, dirtyPending:false, cleanedByUser:false, pendingPark:null,
   isLandscape:true, sensorAvailable:false,
   issues:[],
 };
@@ -969,6 +996,7 @@ function photoForSlot(i){
 
 /* 路徑；null = 走佔位圖；undefined = 沒東西可拍了 */
 function currentSource(){
+  if (state.camMode === "parking") return DIR + PARKING_PHOTO;
   if (state.retakeOnly !== null){
     const key = state.shots[state.retakeOnly].key;
     return RETAKE_PHOTOS[key] ? DIR + RETAKE_PHOTOS[key] : null;
@@ -1019,6 +1047,15 @@ async function renderViewfinder(){
 function renderSlots(){
   const wrap = $("#slots");
   wrap.innerHTML = "";
+
+  if (state.camMode === "parking"){            // R9 現場照：單張，沒有 slot 列
+    $("#cam-title").textContent = "停車位置";
+    $("#cam-subtitle").textContent = "請拍攝車輛停放環境（含車輛）";
+    $("#cam-done").textContent = "取消";
+    $("#cam-done").disabled = false;
+    return;
+  }
+
   const inDamage = requiredDone() && state.retakeOnly === null;
   const nD = state.damageShots.length;
   const cur = state.retakeOnly ?? state.activeIdx;
@@ -1088,6 +1125,15 @@ $("#shutter").addEventListener("click", async () => {
       return;
     }
     shot = renderShot(im, im.naturalWidth, im.naturalHeight);
+  }
+
+  // R9 現場照：拍完先進確認列，按 ✓ 才算數
+  if (state.camMode === "parking"){
+    state.pendingPark = shot.dataUrl;
+    $("#preview").src = shot.dataUrl;
+    $("#cam-bottom").style.display = "none";
+    $("#confirmbar").classList.add("on");
+    return;
   }
 
   // 車損段
@@ -1184,7 +1230,10 @@ async function runJudgement(){
   openSheet("#scrim-recheck");
 }
 
-$("#cam-done").addEventListener("click", runJudgement);
+$("#cam-done").addEventListener("click", () => {
+  if (state.camMode === "parking"){ exitParkingCamera(); return; }   // 「取消」
+  runJudgement();
+});
 
 /* ── C3 補拍提示 ── */
 function renderRecheck(){
@@ -1300,15 +1349,45 @@ $("#btn-dirty-skip").addEventListener("click", () => {
    ═══════════════════════════════════════════════════════════ */
 
 function syncParkNext(){
-  $("#btn-park-next").disabled = !($("#park-text").value.trim() && state.parkShot);
+  $("#btn-park-next").disabled = !($("#park-text").value.trim() && state.parkShotUrl);
 }
 $("#park-text").addEventListener("input", syncParkNext);
-$("#park-shot").addEventListener("click", () => {
-  state.parkShot = true;
-  $("#park-thumb").innerHTML =
-    '<div class="placeholder" style="height:74px;font-size:11px">現場照【外殼】</div>';
+
+function renderParkThumb(){
+  const box = $("#park-thumb");
+  if (!state.parkShotUrl){ box.innerHTML = ""; syncParkNext(); return; }
+  box.innerHTML =
+    '<div style="position:relative;width:74px">' +
+    '<img src="' + state.parkShotUrl + '" style="width:74px;height:74px;object-fit:cover;border-radius:10px;display:block">' +
+    '<button id="park-del" style="position:absolute;top:-7px;right:-7px;width:21px;height:21px;' +
+    'border:0;border-radius:50%;background:#5a5f66;color:#fff;font-size:12px;cursor:pointer;line-height:1">✕</button></div>';
+  $("#park-del").onclick = () => { state.parkShotUrl = null; renderParkThumb(); };
   syncParkNext();
+}
+
+/* 「直接拍攝」→ 進相機（單張 + 確認），不是佔位框 */
+$("#park-shot").addEventListener("click", () => enterCamera("parking"));
+
+function exitParkingCamera(){
+  state.pendingPark = null;
+  state.camMode = "sequence";
+  $("#confirmbar").classList.remove("on");
+  $("#cam-bottom").style.display = "";
+  renderParkThumb();
+  show("screen-parkinfo");
+}
+
+$("#confirm-ok").addEventListener("click", () => {
+  state.parkShotUrl = state.pendingPark;
+  exitParkingCamera();
 });
+$("#confirm-redo").addEventListener("click", () => {
+  state.pendingPark = null;
+  $("#confirmbar").classList.remove("on");
+  $("#cam-bottom").style.display = "";
+  renderViewfinder();
+});
+
 $("#btn-park-next").addEventListener("click", lockAndFinish);
 $("#btn-park-skip").addEventListener("click", lockAndFinish);
 
@@ -1421,7 +1500,8 @@ $("#opt-bad").addEventListener("click", () => {
   enterCamera();
 });
 
-async function enterCamera(){
+async function enterCamera(mode){
+  state.camMode = mode || "sequence";
   await enableSensor();          // 只要陀螺儀，不要相機
   show("screen-camera");
   renderSlots();
