@@ -1,0 +1,68 @@
+<!doctype html>
+<html lang="zh-Hant">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<title>iRent 智能車況管家 — 展示首頁</title>
+<style>
+:root{
+  --irent-red:#D7000F;
+  --irent-blue:#1DA6D0;
+  --ink:#1c1c1e;
+  --muted:#888989;
+}
+*{box-sizing:border-box}
+html,body{margin:0;height:100%}
+body{
+  display:flex;flex-direction:column;height:100%;
+  font-family:-apple-system,BlinkMacSystemFont,"PingFang TC","Microsoft JhengHei",sans-serif;
+  background:#e8eaed;color:var(--ink);
+}
+header{
+  flex:0 0 auto;display:flex;align-items:center;gap:16px;
+  padding:12px 20px;background:#fff;border-bottom:1px solid #e0e0e0;
+}
+header h1{font-size:16px;margin:0;font-weight:700}
+.tabs{display:flex;gap:8px;margin-left:auto}
+.tabs button{
+  font:inherit;font-size:14px;font-weight:600;cursor:pointer;
+  padding:8px 18px;border-radius:999px;border:1px solid transparent;
+  background:#f0f1f3;color:var(--muted);
+}
+.tabs button.active{background:var(--irent-red);color:#fff}
+.tabs button:nth-child(2).active{background:var(--irent-blue)}
+main{flex:1 1 auto;position:relative}
+iframe{position:absolute;inset:0;width:100%;height:100%;border:0;background:#e8eaed}
+iframe[hidden]{display:none}
+</style>
+</head>
+<body>
+<header>
+  <h1>iRent 智能車況管家</h1>
+  <div class="tabs">
+    <button id="tab-pick" class="active">取車拍照</button>
+    <button id="tab-return">還車拍照</button>
+  </div>
+</header>
+<main>
+  <iframe id="frame-pick" src="取車拍照.html" title="取車拍照"></iframe>
+  <iframe id="frame-return" src="還車拍照.html" title="還車拍照" hidden></iframe>
+</main>
+<script>
+const btnPick = document.getElementById('tab-pick');
+const btnReturn = document.getElementById('tab-return');
+const framePick = document.getElementById('frame-pick');
+const frameReturn = document.getElementById('frame-return');
+
+function show(which){
+  const pick = which === 'pick';
+  btnPick.classList.toggle('active', pick);
+  btnReturn.classList.toggle('active', !pick);
+  framePick.hidden = !pick;
+  frameReturn.hidden = pick;
+}
+btnPick.onclick = () => show('pick');
+btnReturn.onclick = () => show('return');
+</script>
+</body>
+</html>
