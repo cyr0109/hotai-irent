@@ -373,7 +373,7 @@ body{
           <div class="body">
             <div><span class="chip">路邊</span></div>
             <div class="card" style="margin-top:12px">
-              <div style="font-size:24px;font-weight:700;letter-spacing:1px">RCG-2235</div>
+              <div style="font-size:24px;font-weight:700;letter-spacing:1px">RDZ-6925</div>
               <div class="card__label" style="margin-top:14px">已使用時間</div>
               <div class="card__big">00 : 41 : 20</div>
             </div>
@@ -436,10 +436,8 @@ body{
           <div class="body">
             <h1 class="h1">檢查車輛狀況</h1>
             <p class="sub">請仔細檢查有無損傷、凹陷等，<br>完善拍照可保障自身權益。</p>
-            <div class="placeholder" style="height:200px;margin:10px 0">
-              素材待補 ①<br>car-hero.png
-            </div>
-            <div class="plate-label">車號：<span data-plate>RCG-2235</span></div>
+            <img src="asset/car-hero.png" alt="車輛示意圖" style="width:100%; height:auto; display:block; margin:6px 0 20px;"> 
+            <div class="plate-label">車號：<span data-plate>RDZ-6925</span></div>
           </div>
           <div class="footer">
             <button class="btn btn--red" id="btn-precheck-ok">檢查完成，下一步</button>
@@ -484,7 +482,7 @@ body{
             <img id="preview" alt="">
             <div class="cam__note" id="cam-note"></div>
 
-            <div class="watermark">車號：<span data-plate>RCG-2235</span></div>
+            <div class="watermark">車號：<span data-plate>RDZ-6925</span></div>
             <div class="hint-lowlight" id="hint-lowlight">環境目前看起來很暗，建議開啟閃光燈拍照 ↓</div>
 
             <div class="cam__top">
@@ -580,7 +578,7 @@ body{
             <h1 class="h1">還車成功</h1>
             <p class="sub" id="success-summary"></p>
             <div class="card" style="text-align:left">
-              <div class="row"><span>車號</span><b>RCG-2235</b></div>
+              <div class="row"><span>車號</span><b>RDZ-6925</b></div>
               <div class="row"><span>租用時間</span><b>00:41:20</b></div>
               <div class="row"><span>還車地點</span><b id="success-loc">路邊停車格</b></div>
             </div>
@@ -731,13 +729,13 @@ body{
    設定
    ═══════════════════════════════════════════════════════════ */
 
-const PLATE = "RCG-2235";
+const PLATE = "RDZ-6925";
 const DIR = "asset/";
 
 /* R6 拍照序列：前 7 格必填，後 4 格為 optional 的車損特寫。
    photo=null 代表素材待補，按快門會產生標示用的佔位圖。 */
 const SLOT_DEFS = [
-  { key:"fuel_card",       label:"卡片", title:"加油卡／停車卡", sub:"於駕駛座上方的遮陽板", photo:null, todo:"加油卡／停車卡（駕駛座遮陽板）" },
+  { key:"fuel_card",       label:"卡片", title:"加油卡／停車卡", sub:"於駕駛座上方的遮陽板", photo:"card-return.png", todo:"加油卡／停車卡（駕駛座遮陽板）" },
   { key:"interior_front",  label:"前座", title:"車內裝（前座）", sub:"請拍攝前座照片",       photo:null, todo:"車內前座" },
   { key:"interior_rear",   label:"後座", title:"車內裝（後座）", sub:"請拍攝後座照片",       photo:null, todo:"車內後座" },
   { key:"front_left",      label:"左前", title:"車身拍照", sub:"請拍攝車輛四角（含車牌）" },
@@ -752,28 +750,28 @@ const INTERIOR = ["interior_front","interior_rear"];
 /* 車外四角的四張照片，依情境不同（與 取車拍照.html 共用同一組素材） */
 const SCENARIOS = {
   pass:{
-    photos:["rcg2235-front-left-pickup.jpg","rcg2235-front-right-pickup.jpg",
-            "rcg2235-rear-left-pickup.jpg","rcg2235-rear-right-pickup.jpg"],
+    photos:["rdz6925-front-left-pickup.png","rdz6925-front-right-pickup.png",
+            "rdz6925-rear-left-pickup.png","rdz6925-rear-right-pickup.png"],
     judgement:{ coverage:{ missing:[] }, plate:{ complete:true, best_confidence:0.81 } },
   },
   missing:{
     // 第 3 格該拍左後，卻又拍了一張右後 → 角度覆蓋缺 rear_left
-    photos:["rcg2235-front-left-return.jpg","rcg2235-front-right-return.jpg",
-            "rcg2235-rear-right-return.jpg","rcg2235-rear-right-pickup.jpg"],
+    photos:["rdz6925-front-left-return.png","rdz6925-front-right-return.png",
+            "rdz6925-rear-right-return.png","rdz6925-rear-right-pickup.png"],
     judgement:{ coverage:{ missing:["rear_left"], reason:"方向拍成右後" },
                 plate:{ complete:false, best_confidence:0.43 } },
   },
   plate:{
-    photos:["rcg2235-front-left-return.jpg","rcg2235-front-right-return.jpg",
-            "rcg2235-rear-left-return.jpg","rcg2235-rear-right-return.jpg"],
+    photos:["rdz6925-front-left-return.png","rdz6925-front-right-return.png",
+            "rdz6925-rear-left-return.png","rdz6925-rear-right-return.png"],
     judgement:{ coverage:{ missing:[] }, plate:{ complete:false, best_confidence:0.38 } },
   },
 };
 const RETAKE_PHOTOS = {
-  front_left:"rcg2235-front-left-pickup.jpg",
-  front_right:"rcg2235-front-right-pickup.jpg",
-  rear_left:"rcg2235-rear-left-pickup.jpg",
-  rear_right:"rcg2235-rear-right-pickup.jpg",
+  front_left:"rdz6925-front-left-pickup.png",
+  front_right:"rdz6925-front-right-pickup.png",
+  rear_left:"rdz6925-rear-left-pickup.png",
+  rear_right:"rdz6925-rear-right-pickup.png",
 };
 
 /* 車損特寫：素材待補 ③（見 asset/README.md）。填檔名即自動生效。 */
@@ -989,8 +987,13 @@ function loadImage(path){
 
 /* 某一格必填 slot 該取到哪張照片；null = 素材待補 */
 function photoForSlot(i){
-  const key = state.shots[i].key;
-  const e = EXTERIOR.indexOf(key);
+  const s = state.shots[i];
+  
+  // 前 3 格：使用各自的示意圖片
+  if (s.photo) return DIR + s.photo;
+
+  // 後 4 格：依情境使用車身四角圖片
+  const e = EXTERIOR.indexOf(s.key);
   return e === -1 ? null : DIR + SCENARIOS[state.scenario].photos[e];
 }
 

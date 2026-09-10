@@ -348,14 +348,12 @@ body{
           <div class="progress"><div class="progress__fill" style="width:10%"></div></div>
           <div class="body">
             <div class="card" style="text-align:center;padding:22px 18px">
-              <div class="placeholder" style="height:96px;margin-bottom:14px">感應區插圖【外殼】</div>
+              <img src="asset/easycard.jpg" alt="悠遊卡感應示意圖" style="width:100%; height:auto; display:block; margin-bottom:14px;">
               <div style="font-size:14.5px;font-weight:600;line-height:1.7">
                 用 悠遊卡 / 一卡通 感應，未來就能用<br>這張卡片 開關車門 囉！
               </div>
             </div>
-            <div class="placeholder" style="height:120px;margin:6px 0 20px">
-              素材待補 ①<br>car-hero.png
-            </div>
+            <img src="asset/car-hero.png" alt="車輛示意圖" style="width:100%; height:auto; display:block; margin:6px 0 20px;">
             <div class="countdown" id="card-countdown">00 : 59</div>
             <p class="sub" style="margin:8px 0 0">請在時間內完成靠卡</p>
           </div>
@@ -375,10 +373,8 @@ body{
           <div class="body">
             <h1 class="h1">檢查車輛四周</h1>
             <p class="sub">請仔細檢查有無損傷、凹陷等，<br>完善拍照可保障自身權益。</p>
-            <div class="placeholder" style="height:210px;margin:12px 0">
-              素材待補 ①<br>car-hero.png
-            </div>
-            <div class="plate-label">車號：<span data-plate>RCG-2235</span></div>
+            <img src="asset/car-hero.png" alt="車輛示意圖" style="width:100%; height:auto; display:block; margin:6px 0 20px;">
+            <div class="plate-label">車號：<span data-plate>RDZ-6925</span></div>
           </div>
           <div class="footer">
             <button class="btn btn--red" id="btn-start">檢查完成，下一步</button>
@@ -451,7 +447,7 @@ body{
             <video id="video" playsinline muted autoplay></video>
             <div class="cam__note" id="cam-note"></div>
 
-            <div class="watermark">車號：<span data-plate>RCG-2235</span></div>
+            <div class="watermark">車號：<span data-plate>RDZ-6925</span></div>
             <div class="hint-lowlight" id="hint-lowlight">環境目前看起來很暗，建議開啟閃光燈拍照 ↓</div>
 
             <div class="cam__top">
@@ -528,7 +524,7 @@ body{
             <div class="warnbar">⚠ 提醒您！請勿在車內吸菸！<span>違者將酌收車輛清潔費用 1000 元</span></div>
             <div><span class="chip">同站</span></div>
             <div class="card" style="margin-top:12px">
-              <div style="font-size:24px;font-weight:700;letter-spacing:1px">RCG-2235</div>
+              <div style="font-size:24px;font-weight:700;letter-spacing:1px">RDZ-6925</div>
               <div class="row" style="margin-top:12px"><span>已使用時間</span><b>00 : 00 : 12</b></div>
             </div>
             <div class="card">
@@ -577,7 +573,7 @@ body{
         <!-- ══════════ P1 靠卡設定的 modal【外殼】══════════ -->
         <div class="scrim scrim--center" id="scrim-card">
           <div class="sheet sheet--center">
-            <div class="placeholder" style="height:110px;margin-bottom:16px">車輛插圖【外殼】</div>
+            <img src="asset/easycard-setup.png" alt="訊號差設定" style="width:100%; height:auto; display:block; margin-bottom:16px;">
             <p class="sheet__p" style="text-align:center;font-size:14.5px;color:var(--ink)">
               設定卡片後，在訊號差的區域也能解鎖哦
             </p>
@@ -690,7 +686,7 @@ const SLOT_DEFS = [
 ];
 const SLOT_NAME = Object.fromEntries(SLOT_DEFS.map(s => [s.key, s.label]));
 
-const PLATE = "RCG-2235";
+const PLATE = "RDZ-6925";
 const DIR = "asset/";        // 全部素材集中在此，檔名一律 ASCII（見 asset/README.md）
 
 /* 四角照：每個情境一組真實照片（官方資料集，1280×720 橫式）。
@@ -698,29 +694,29 @@ const DIR = "asset/";        // 全部素材集中在此，檔名一律 ASCII（
 const SCENARIOS = {
   missing:{
     // 第 3 格該拍左後，卻又拍了一張右後 → 角度覆蓋缺 rear_left
-    photos:["rcg2235-front-left-pickup.jpg","rcg2235-front-right-pickup.jpg",
-            "rcg2235-rear-right-pickup.jpg","rcg2235-rear-right-return.jpg"],
+    photos:["rdz6925-front-left-pickup.png","rdz6925-front-right-pickup.png",
+            "rdz6925-rear-right-pickup.png","rdz6925-rear-right-return.png"],
     judgement:{ coverage:{ missing:["rear_left"], reason:"方向拍成右後" },
                 plate:{ complete:false, best_confidence:0.43 } },
   },
   plate:{
-    photos:["rcg2235-front-left-return.jpg","rcg2235-front-right-return.jpg",
-            "rcg2235-rear-left-return.jpg","rcg2235-rear-right-return.jpg"],
+    photos:["rdz6925-front-left-return.png","rdz6925-front-right-return.png",
+            "rdz6925-rear-left-return.png","rdz6925-rear-right-return.png"],
     judgement:{ coverage:{ missing:[] },
                 plate:{ complete:false, best_confidence:0.38 } },
   },
   pass:{
-    photos:["rcg2235-front-left-pickup.jpg","rcg2235-front-right-pickup.jpg",
-            "rcg2235-rear-left-pickup.jpg","rcg2235-rear-right-pickup.jpg"],
+    photos:["rdz6925-front-left-pickup.png","rdz6925-front-right-pickup.png",
+            "rdz6925-rear-left-pickup.png","rdz6925-rear-right-pickup.png"],
     judgement:{ coverage:{ missing:[] },
                 plate:{ complete:true, best_confidence:0.81 } },
   },
 };
 const RETAKE_PHOTOS = {
-  front_left:"rcg2235-front-left-pickup.jpg",
-  front_right:"rcg2235-front-right-pickup.jpg",
-  rear_left:"rcg2235-rear-left-pickup.jpg",
-  rear_right:"rcg2235-rear-right-pickup.jpg",
+  front_left:"rdz6925-front-left-pickup.png",
+  front_right:"rdz6925-front-right-pickup.png",
+  rear_left:"rdz6925-rear-left-pickup.png",
+  rear_right:"rdz6925-rear-right-pickup.png",
 };
 
 /* 車損特寫：素材待補 ③（見 asset/README.md）。
