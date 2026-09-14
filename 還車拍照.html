@@ -163,11 +163,14 @@ body{
 }
 .radiocard.sel .radiocard__dot{border-color:var(--irent-blue);background:radial-gradient(circle,var(--irent-blue) 0 5px,#fff 6px)}
 .mapstub{
-  height:150px;border-radius:12px;margin-bottom:16px;
-  background:linear-gradient(135deg,#e9edf2,#dfe5ec);
-  display:flex;align-items:center;justify-content:center;color:#9aa0a8;font-size:12px;position:relative;
+  height:150px;border-radius:12px;margin-bottom:16px;background-image:url("asset/map.jpg");
+  background-size:cover;background-position:center;display:flex;align-items:center;justify-content:center;
+  color:#9aa0a8;font-size:12px;position:relative;overflow:hidden;
 }
-.mapstub::after{content:"📍";position:absolute;font-size:26px}
+
+.mapstub::after{
+  content:"📍";position:absolute;font-size:26px;
+}
 
 /* ══════════ 相機頁 ══════════ */
 #screen-camera{background:#000}
@@ -582,12 +585,10 @@ body{
               <div class="row"><span>租用時間</span><b>00:41:20</b></div>
               <div class="row"><span>還車地點</span><b id="success-loc">路邊停車格</b></div>
             </div>
-            <div class="placeholder" style="height:90px">
-              街景／現場照【外殼】
-            </div>
+            <img src="asset/map.jpg" alt="街景／現場照" style="width:100%; height:90px; object-fit:cover; display:block;">
           </div>
           <div class="footer">
-            <button class="btn btn--red" data-restart>再跑一次</button>
+            <button class="btn btn--red" data-restart>回主畫面</button>
           </div>
         </section>
 
@@ -736,8 +737,8 @@ const DIR = "asset/";
    photo=null 代表素材待補，按快門會產生標示用的佔位圖。 */
 const SLOT_DEFS = [
   { key:"fuel_card",       label:"卡片", title:"加油卡／停車卡", sub:"於駕駛座上方的遮陽板", photo:"card-return.png", todo:"加油卡／停車卡（駕駛座遮陽板）" },
-  { key:"interior_front",  label:"前座", title:"車內裝（前座）", sub:"請拍攝前座照片",       photo:null, todo:"車內前座" },
-  { key:"interior_rear",   label:"後座", title:"車內裝（後座）", sub:"請拍攝後座照片",       photo:null, todo:"車內後座" },
+  { key:"interior_front",  label:"前座", title:"車內裝（前座）", sub:"請拍攝前座照片",       photo:"rdz6925-front-seat-return.png", todo:"車內前座" },
+  { key:"interior_rear",   label:"後座", title:"車內裝（後座）", sub:"請拍攝後座照片",       photo:"rdz6925-rear-seat-return.png", todo:"車內後座" },
   { key:"front_left",      label:"左前", title:"車身拍照", sub:"請拍攝車輛四角（含車牌）" },
   { key:"front_right",     label:"右前", title:"車身拍照", sub:"請拍攝車輛四角（含車牌）" },
   { key:"rear_left",       label:"左後", title:"車身拍照", sub:"請拍攝車輛四角（含車牌）" },
@@ -768,6 +769,7 @@ const SCENARIOS = {
   },
 };
 const RETAKE_PHOTOS = {
+  interior_front:"rdz6925-front-seat-return.png",
   front_left:"rdz6925-front-left-pickup.png",
   front_right:"rdz6925-front-right-pickup.png",
   rear_left:"rdz6925-rear-left-pickup.png",
@@ -775,12 +777,12 @@ const RETAKE_PHOTOS = {
 };
 
 /* 車損特寫：素材待補 ③（見 asset/README.md）。填檔名即自動生效。 */
-const DAMAGE_PHOTOS = [];
+const DAMAGE_PHOTOS = ["rdz6925-damage-1.png","rdz6925-damage-2.png","rdz6925-damage-3.png","rdz6925-damage-4.png"];
 const DAMAGE_MAX = 4;
 
 /* R9 現場照：拍車輛停放環境（含車輛），用來幫下一位使用者找車。
    跟車況證據照不同用途，但沿用同一台相機與同樣的橫式規則。 */
-const PARKING_PHOTO = "pull-over.jpg";
+const PARKING_PHOTO = "pull-over.png";
 
 const BLUR_THRESHOLD = 60;
 const DARK_THRESHOLD = 62;
@@ -986,10 +988,27 @@ function loadImage(path){
 }
 
 /* 某一格必填 slot 該取到哪張照片；null = 素材待補 */
+/* 某一格必填 slot 該取到哪張照片；null = 素材待補 */
 function photoForSlot(i){
   const s = state.shots[i];
-  
-  // 前 3 格：使用各自的示意圖片
+
+  // 車內前座：
+  // - 若使用者選擇「有髒污」且尚未重拍 → 使用髒污照片
+  // - 沒有問題 → 使用正常照片
+  // - 重拍 → currentSource() 會走 RETAKE_PHOTOS，使用正常照片
+  if (s.key === "interior_front"){
+    if (
+      state.cleanliness === "dirty" &&
+      !state.dirtyResolved &&
+      state.retakeOnly === null
+    ){
+      return DIR + "rdz6925-front-seat-return-dirty.png";
+    }
+
+    return DIR + "rdz6925-front-seat-return.png";
+  }
+
+  // 其他前 3 格：使用各自的示意圖片
   if (s.photo) return DIR + s.photo;
 
   // 後 4 格：依情境使用車身四角圖片
@@ -1006,7 +1025,7 @@ function currentSource(){
   }
   if (!requiredDone()) return photoForSlot(state.activeIdx);
   if (state.damageShots.length >= DAMAGE_MAX) return undefined;
-  return DAMAGE_PHOTOS[state.damageShots.length] || null;
+  return DIR + DAMAGE_PHOTOS[state.damageShots.length] || null;
 }
 
 /* 目前這一格要拍什麼（給佔位圖與提示用） */
@@ -1400,7 +1419,7 @@ $("#btn-park-skip").addEventListener("click", lockAndFinish);
 
 function lockAndFinish(){
   const bits = [];
-  bits.push(state.postReport === "damaged" ? "已記錄您的車損回報" : "未回報新車損");
+  bits.push(state.postReport === "damaged" ? "已記錄車損回報" : "未回報新車損");
   bits.push(state.issues.length === 0 ? "照片全部通過檢查"
                                       : "記錄 " + state.issues.length + " 項缺項與同意紀錄");
   if (state.cleanedByUser) bits.push("已整理車內");

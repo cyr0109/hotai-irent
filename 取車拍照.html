@@ -429,9 +429,7 @@ body{
               無論哪一種，都請幫我們拍下問題處，<br>
               讓下一位使用者不會踩到同一個坑。
             </p>
-            <div class="placeholder" style="height:150px;margin:4px 0 8px">
-              素材待補 ②<br>illust-reported.png
-            </div>
+            <img src="asset/easycard-setup.png" alt="EasyCard 設定示意圖" style="width:100%; height:auto; display:block; margin:6px 0 20px;">
             <p class="reward">✦ 誠實回報可獲得綠色里程點數</p>
           </div>
           <div class="footer">
@@ -561,12 +559,9 @@ body{
             <div style="font-size:52px;color:var(--irent-blue)">✦</div>
             <h1 class="h1">已收到回報</h1>
             <p class="sub" id="reported-summary"></p>
-            <div class="placeholder" style="height:110px;margin-top:12px">
-              後續回到車輛列表，改租其他車輛<br>【外殼】，不在本次範圍
-            </div>
           </div>
           <div class="footer">
-            <button class="btn btn--red" data-restart>再跑一次</button>
+            <button class="btn btn--red" data-restart>改租其他車輛</button>
           </div>
         </section>
 
@@ -585,9 +580,7 @@ body{
         <!-- ══════════ P9 用車說明【外殼】══════════ -->
         <div class="scrim scrim--center" id="scrim-manual">
           <div class="sheet sheet--center" style="padding:0;overflow:hidden">
-            <div class="placeholder" style="height:130px;border-radius:16px 16px 0 0;border:0">
-              駕駛座照片＋①②③ 標號【外殼】
-            </div>
+            <img src="asset/fuel-card.png" alt="用車說明" style="width:100%; height:130px; object-fit:cover; border-radius:16px 16px 0 0; display:block; border:0;">
             <div style="padding:18px 20px 20px">
               <h2 class="sheet__h" style="text-align:center">用車說明</h2>
               <div style="font-size:12.5px;line-height:1.75">
@@ -658,6 +651,7 @@ body{
 
     <label for="mock-scenario">四角照判定情境</label>
     <select id="mock-scenario">
+      <option value="wrong_direction">僅缺左後角度（方向拍成右後）＋車牌通過</option>
       <option value="missing">缺左後角度（方向拍成右後）＋無完整車牌</option>
       <option value="plate">僅無完整車牌</option>
       <option value="pass">全部通過</option>
@@ -692,10 +686,17 @@ const DIR = "asset/";        // 全部素材集中在此，檔名一律 ASCII（
 /* 四角照：每個情境一組真實照片（官方資料集，1280×720 橫式）。
    按快門取出的就是這一組，畫面內容與 fetchJudgement() 的判定一致。 */
 const SCENARIOS = {
+  wrong_direction:{
+    // 故意將第 3 格放右後 (rear-right)，但全部用清晰的 -pickup 確保車牌判定會過
+    photos:["rdz6925-front-left-pickup.png","rdz6925-front-right-pickup.png",
+            "rdz6925-rear-right-pickup.png","rdz6925-rear-right-pickup-blur.png"],
+    judgement:{ coverage:{ missing:["rear_left"], reason:"方向拍成右後" },
+                plate:{ complete:true, best_confidence:0.85 } }, // 車牌 complete 設為 true
+  },
   missing:{
     // 第 3 格該拍左後，卻又拍了一張右後 → 角度覆蓋缺 rear_left
     photos:["rdz6925-front-left-pickup.png","rdz6925-front-right-pickup.png",
-            "rdz6925-rear-right-pickup.png","rdz6925-rear-right-return.png"],
+            "rdz6925-rear-right-pickup.png","rdz6925-rear-right-pickup-blur.png"],
     judgement:{ coverage:{ missing:["rear_left"], reason:"方向拍成右後" },
                 plate:{ complete:false, best_confidence:0.43 } },
   },
@@ -719,9 +720,7 @@ const RETAKE_PHOTOS = {
   rear_right:"rdz6925-rear-right-pickup.png",
 };
 
-/* 車損特寫：素材待補 ③（見 asset/README.md）。
-   把檔名填進來即可自動生效；空陣列時走佔位圖。 */
-const DAMAGE_PHOTOS = [];
+const DAMAGE_PHOTOS = ["rdz6925-damage-1.png","rdz6925-damage-2.png","rdz6925-damage-3.png","rdz6925-damage-4.png"];
 const DAMAGE_MAX = 4;
 
 const BLUR_THRESHOLD = 60;
@@ -732,7 +731,7 @@ const DARK_THRESHOLD = 62;
    ═══════════════════════════════════════════════════════════ */
 
 const state = {
-  scenario:"missing",
+  scenario:"wrong_direction", // 模擬器用，決定四角照的判定結果
   preReport:null,          // null | "none" | "damaged"
   // "full"       = P5 完整序列：四角 4 張必拍 → 車損特寫 optional → C2
   // "damageOnly" = P4b 放棄租車：只拍車損特寫，不跑 C2
@@ -947,7 +946,7 @@ function currentSource(){
     return DIR + SCENARIOS[state.scenario].photos[state.activeIdx];
 
   if (state.damageShots.length >= DAMAGE_MAX) return undefined;   // 車損段拍滿
-  return DAMAGE_PHOTOS[state.damageShots.length] || null;         // null = 素材待補
+  return DIR + DAMAGE_PHOTOS[state.damageShots.length] || null;         // return damagePhoto ? DIR + damagePhoto : null;
 }
 
 function canShoot(){ return currentSource() !== undefined; }
