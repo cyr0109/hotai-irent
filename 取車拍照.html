@@ -321,6 +321,64 @@ body{
   .stage{flex-direction:column;gap:16px;overflow:auto;align-items:center}
   .devbar{width:min(390px,90vw)}
 }
+
+/* ══════════ 相機輔助線 ══════════ */
+.guideline {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  object-fit: contain;
+  pointer-events: none; /* 讓點擊穿透，不阻擋使用者操作 */
+  z-index: 999; /* 確保浮在預覽圖層之上，但低於相機操作按鈕 (z-index 4+) */
+  opacity: 0.8; /* 半透明，避免太刺眼干擾取景 */
+  padding: 8%; /* 稍微內縮，避免車輛貼齊螢幕邊緣 */
+  transform: scale(2);
+  display: none;
+}
+.guideline.on {
+  display: block;
+}
+/* ══════════ 已知車損紀錄 ══════════ */
+.known-damage {
+  background: var(--surface);
+  border: 1px solid var(--divider);
+  border-radius: 12px;
+  padding: 14px;
+  margin-bottom: 22px;
+  box-shadow: 0 2px 6px rgba(0,0,0,.03);
+}
+.known-damage__text {
+  font-size: 12.5px;
+  color: #5a5f66;
+  line-height: 1.6;
+  margin-bottom: 12px;
+}
+.known-damage__loc {
+  font-size: 12px;
+  font-weight: 600;
+  color: var(--irent-red);
+  background: #FFF1F1; /* Light red background to match the brand */
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  padding: 6px 10px;
+  border-radius: 6px;
+  margin-bottom: 12px;
+}
+.known-damage__photos {
+  display: flex;
+  gap: 8px;
+}
+.known-damage__photos img {
+  flex: 1;
+  aspect-ratio: 1;
+  object-fit: cover;
+  border-radius: 6px;
+  min-width: 0;
+  border: 1px solid var(--divider);
+}
+
 </style>
 </head>
 <body>
@@ -393,12 +451,25 @@ body{
           <div class="body">
             <h1 class="h1">這台車現在<br>看起來有問題嗎？</h1>
             <p class="sub">您剛才環顧車輛四周時，<br>有沒有發現前一位使用者留下的損傷？</p>
-
+            <!-- 插入的已知車損區塊 -->
+            <div class="known-damage">
+              <div class="known-damage__text">
+                以下為前一位使用者的車損紀錄，系統已完整建檔，您無須對此負責：
+              </div>
+              <div class="known-damage__loc">
+                已標記部位：左前、左後
+              </div>
+              <div class="known-damage__photos">
+                <img src="asset/rdz6925-damage-1.png" alt="已知車損">
+                <img src="asset/rdz6925-damage-2.png" alt="已知車損">
+                <img src="asset/rdz6925-damage-3.png" alt="已知車損">
+              </div>
+            </div>
             <button class="opt" id="opt-ok">
               <span class="opt__ic opt__ic--ok">✓</span>
               <span>
                 <span class="opt__t">沒問題</span>
-                <span class="opt__d">車況看起來正常，可以直接開始拍照</span>
+                <span class="opt__d">除了上述已知狀況，車況看起來正常</span>
               </span>
             </button>
 
@@ -406,7 +477,7 @@ body{
               <span class="opt__ic opt__ic--bad">!</span>
               <span>
                 <span class="opt__t">有問題</span>
-                <span class="opt__d">我發現了刮痕、凹陷或其他異常</span>
+                <span class="opt__d">我發現了其它刮痕、凹陷或其他異常</span>
               </span>
             </button>
 
@@ -443,6 +514,8 @@ body{
           <div class="cam">
             <img id="preview" alt="">
             <video id="video" playsinline muted autoplay></video>
+            <img id="guideline" class="guideline" alt="">
+
             <div class="cam__note" id="cam-note"></div>
 
             <div class="watermark">車號：<span data-plate>RDZ-6925</span></div>
@@ -679,6 +752,12 @@ const SLOT_DEFS = [
   { key:"rear_right",  label:"右後" },
 ];
 const SLOT_NAME = Object.fromEntries(SLOT_DEFS.map(s => [s.key, s.label]));
+const GUIDELINES = {
+  front_left: "front-left-border.png",
+  front_right: "front-right-border.png",
+  rear_left: "rear-left-border.png",
+  rear_right: "rear-right-border.png",
+};
 
 const PLATE = "RDZ-6925";
 const DIR = "asset/";        // 全部素材集中在此，檔名一律 ASCII（見 asset/README.md）
@@ -1032,6 +1111,25 @@ function renderSlots(){
           : "若有發現損傷可以補拍（") + (nD + 1) + " / " + DAMAGE_MAX + "）";
     $("#cam-done").textContent = nD === 0 ? "略過" : "完成";
     $("#cam-done").disabled = false;
+  }
+  // ════════ 加入這段：連動輔助線 ════════
+  const gl = $("#guideline");
+  if (gl) {
+    // 只有在「拍攝四角車身」階段才顯示，拍車損特寫或全部拍完時隱藏
+    if (state.retakeOnly !== null || !bodyDone() && state.camMode !== "damageOnly") {
+      const curIdx = state.retakeOnly ?? state.activeIdx;
+      if (curIdx !== null && state.shots[curIdx]) {
+        const key = state.shots[curIdx].key;
+        if (GUIDELINES[key]) {
+          gl.src = DIR + GUIDELINES[key];
+          gl.classList.add("on");
+        } else {
+          gl.classList.remove("on");
+        }
+      }
+    } else {
+      gl.classList.remove("on");
+    }
   }
 }
 

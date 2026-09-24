@@ -348,6 +348,23 @@ body{
   .stage{flex-direction:column;gap:16px;overflow:auto;align-items:center}
   .devbar{width:min(390px,90vw)}
 }
+/* ══════════ 相機輔助線 ══════════ */
+.guideline {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  object-fit: contain;
+  pointer-events: none; /* 讓點擊穿透，不阻擋使用者操作 */
+  z-index: 999; /* 確保浮在預覽圖層之上，但低於相機操作按鈕 (z-index 4+) */
+  opacity: 0.8; /* 半透明，避免太刺眼干擾取景 */
+  padding: 8%; /* 稍微內縮，避免車輛貼齊螢幕邊緣 */
+  transform: scale(2);
+  display: none;
+}
+.guideline.on {
+  display: block;
+}
 </style>
 </head>
 <body>
@@ -483,6 +500,7 @@ body{
         <section class="screen" id="screen-camera">
           <div class="cam">
             <img id="preview" alt="">
+            <img id="guideline" class="guideline" alt="">
             <div class="cam__note" id="cam-note"></div>
 
             <div class="watermark">車號：<span data-plate>RDZ-6925</span></div>
@@ -608,7 +626,7 @@ body{
             <div class="meta" id="record-meta"></div>
           </div>
           <div class="footer">
-            <button class="btn btn--red" data-restart>再跑一次</button>
+            <button class="btn btn--red" data-restart>回主畫面</button>
           </div>
         </section>
 
@@ -746,6 +764,12 @@ const SLOT_DEFS = [
 ];
 const EXTERIOR = ["front_left","front_right","rear_left","rear_right"];
 const SLOT_NAME = Object.fromEntries(SLOT_DEFS.map(s => [s.key, s.label]));
+const GUIDELINES = {
+  front_left: "front-left-border.png",
+  front_right: "front-right-border.png",
+  rear_left: "rear-left-border.png",
+  rear_right: "rear-right-border.png",
+};
 const INTERIOR = ["interior_front","interior_rear"];
 
 /* 車外四角的四張照片，依情境不同（與 取車拍照.html 共用同一組素材） */
@@ -1123,6 +1147,24 @@ function renderSlots(){
           : "若有發現損傷可以補拍（") + (nD + 1) + " / " + DAMAGE_MAX + "）";
     $("#cam-done").textContent = nD === 0 ? "略過" : "完成";
     $("#cam-done").disabled = false;
+  }
+  const gl = $("#guideline");
+  if (gl) {
+    // 只有在「拍攝四角車身」階段才顯示，拍車損特寫或全部拍完時隱藏
+    if (!requiredDone() && state.camMode !== "damageOnly") {
+      const curIdx = state.retakeOnly ?? state.activeIdx;
+      if (curIdx !== null && state.shots[curIdx]) {
+        const key = state.shots[curIdx].key;
+        if (GUIDELINES[key]) {
+          gl.src = DIR + GUIDELINES[key];
+          gl.classList.add("on");
+        } else {
+          gl.classList.remove("on");
+        }
+      }
+    } else {
+      gl.classList.remove("on");
+    }
   }
 }
 
