@@ -492,7 +492,7 @@ body{
               </span>
             </button>
 
-            <p class="reward">✦ 誠實回報可獲得綠色里程點數</p>
+            <p class="reward">✦ 誠實回報可獲得和泰 Points 回饋</p>
           </div>
         </section>
 
@@ -548,7 +548,7 @@ body{
             <p class="sub">AI 判定內裝清潔度為「髒汙」</p>
             <div id="dirty-thumb"></div>
             <p style="font-size:13.5px;line-height:1.8;color:#3d3d3d;text-align:center;margin:18px 4px 0">
-              下一位使用者會看到現在這個狀態。<br>整理一下再還車，可以獲得綠色里程點數。
+              下一位使用者會看到現在這個狀態。<br>整理一下再還車，可以獲得和泰 Points 回饋。
             </p>
           </div>
           <div class="footer">
@@ -1482,7 +1482,7 @@ function runBackgroundVerdict(){
   $("#push-title").textContent = found ? "本次還車偵測到車況異常" : "本次還車車況良好";
   $("#push-desc").textContent = found
     ? "AI 比對取車照後發現新增車損，客服將與您聯繫"
-    : (points.length ? "已發放綠色里程點數 " + (points.length * 50) + " 點" : "點按查看車況紀錄");
+    : (points.length ? "已發放和泰 Points " + (points.length * 50) + " 點" : "點按查看車況紀錄");
   $("#push").classList.add("on");
   setPath("背景比對完成 → 推播已送達");
 
@@ -1513,7 +1513,7 @@ function renderRecord(found, points){
     ["使用者回報", state.postReport === "damaged" ? "有新車損" : "沒問題"],
     ["車損特寫", state.damageShots.length + " 張"],
     ["照片缺項", state.issues.length ? state.issues.map(i => i.waiver).join("、") : "無"],
-    ["綠色里程點數", points.length ? points.join("＋") + "，共 " + (points.length*50) + " 點" : "本次未發放"],
+    ["和泰 Points", points.length ? points.join("＋") + "，共 " + (points.length*50) + " 點" : "本次未發放"],
   ];
   $("#record-meta").innerHTML = rows.map(([k, v]) =>
     '<div><b>' + k + '</b>：' + v + '</div>').join("");
