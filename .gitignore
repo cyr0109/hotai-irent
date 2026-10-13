@@ -9,7 +9,8 @@
 # ── demo 網頁 ──
 !取車拍照.html
 !還車拍照.html
-!展示首頁.html
+!home/
+!home/**
 !asset/
 !asset/**
 # 白名單放行 asset/ 後，再排除 demo 沒用到的素材（含 iRent 提供、有真實車牌的照片，不公開散布）

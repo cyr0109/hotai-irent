@@ -2,7 +2,7 @@
 
 2026 和泰 AI 黑客松：用 AI 優化 iRent 共享汽車的租還車體驗與營運效率。
 
-## 👉 [立即試玩 Demo](https://cyr0109.github.io/hotai-irent/)
+## 👉 [立即試玩 Demo](https://cyr0109.github.io/hotai-irent/home/)
 
 手機或電腦都能開。取車、還車兩條動線可以一路跑到底。
 手機開會真的用到相機與陀螺儀（iOS 會問權限）。
@@ -17,7 +17,7 @@
 
 | 想看 | 去哪 |
 |---|---|
-| 互動原型 | [Demo](https://cyr0109.github.io/hotai-irent/)（取車 P1–P10、還車 R1–R12） |
+| 互動原型 | [Demo](https://cyr0109.github.io/hotai-irent/home/)（取車 P1–P10、還車 R1–R12） |
 | AI 怎麼做 | [docs/AI技術架構.md](docs/AI技術架構.md) |
 | 為什麼這樣設計 | [docs/adr/](docs/adr/)（4 份決策紀錄） |
 | 前端實作規格 | [借還車流程.md](借還車流程.md) |
@@ -49,7 +49,7 @@ open http://localhost:8000/
 
 | 檔案 | 說明 |
 |---|---|
-| [展示首頁.html](展示首頁.html) | Demo 入口，取車／還車切換 |
+| [home/](home/) | Demo 入口，取車／還車切換 |
 | [取車拍照.html](取車拍照.html) | 取車流程原型，單檔 HTML，含手機模擬器 |
 | [還車拍照.html](還車拍照.html) | 還車流程原型，含髒污攔截與事後車況預警 |
 | [asset/](asset/) | demo 用到的素材 |
