@@ -1,29 +1,27 @@
-# iRent 智能車況管家 — 前端原型
+# iRent 智能車況管家
 
 2026 和泰 AI 黑客松：用 AI 優化 iRent 共享汽車的租還車體驗與營運效率。
 
-本 repo 只放 **App 端前端原型與規格**。模型訓練、資料集、實驗腳本不在此（見 `.gitignore`）。
+## 👉 [立即試玩 Demo](https://cyr0109.github.io/hotai-irent/)
 
-## 跑起來
+手機或電腦都能開。取車、還車兩條動線可以一路跑到底。
+手機開會真的用到相機與陀螺儀（iOS 會問權限）。
 
-```bash
-python3 -m http.server 8000
-open http://localhost:8000/取車拍照.html
-open http://localhost:8000/還車拍照.html
-```
+## 解決什麼問題
 
-必須用 server，不能直接 `file://` 開——素材路徑與 iOS 陀螺儀權限都要求 http(s)。
+租還車時的照片常常不堪用：模糊、角度沒拍全、車牌沒入鏡。事後有車損糾紛，就沒有證據。
 
-## 檔案
+我們在**拍照當下**就用 AI 把關，還車時再自動比對新車損、判斷車內整潔度，異常交給後台人工複核。
 
-| 檔案 | 說明 |
+## 看哪裡
+
+| 想看 | 去哪 |
 |---|---|
-| [取車拍照.html](取車拍照.html) | 取車流程原型（P1–P10 / C1–C5），單檔 HTML，含手機模擬器 |
-| [還車拍照.html](還車拍照.html) | 還車流程原型（R1–R12），含髒污攔截與事後車況預警 |
-| [借還車流程.md](借還車流程.md) | **前端實作規格**：逐頁列出 component 與行為，取車 + 還車 |
-| [asset/](asset/) | 示範照片與素材，`README.md` 列出還缺哪些圖 |
-| [CONTEXT.md](CONTEXT.md) | 專案術語表 |
-| [docs/adr/](docs/adr/) | 架構決策紀錄 |
+| 互動原型 | [Demo](https://cyr0109.github.io/hotai-irent/)（取車 P1–P10、還車 R1–R12） |
+| AI 怎麼做 | [docs/AI技術架構.md](docs/AI技術架構.md) |
+| 為什麼這樣設計 | [docs/adr/](docs/adr/)（4 份決策紀錄） |
+| 前端實作規格 | [借還車流程.md](借還車流程.md) |
+| 專案術語 | [CONTEXT.md](CONTEXT.md) |
 
 ## 原型現況
 
@@ -37,6 +35,26 @@ open http://localhost:8000/還車拍照.html
 
 **真的在運算的**：手機姿勢硬擋（陀螺儀）、模糊偵測（Laplacian 變異數）、低光偵測（平均亮度）。
 **還是 mock 的**：角度覆蓋、車牌完整性——等模型。接縫收在 `fetchJudgement()` 一支函式，回傳格式就是未來的 API 契約，接真模型時只換函式內容。
+
+## 本機執行
+
+```bash
+python3 -m http.server 8000
+open http://localhost:8000/
+```
+
+必須用 server，不能直接 `file://` 開——素材路徑與 iOS 陀螺儀權限都要求 http(s)。
+
+## 檔案
+
+| 檔案 | 說明 |
+|---|---|
+| [展示首頁.html](展示首頁.html) | Demo 入口，取車／還車切換 |
+| [取車拍照.html](取車拍照.html) | 取車流程原型，單檔 HTML，含手機模擬器 |
+| [還車拍照.html](還車拍照.html) | 還車流程原型，含髒污攔截與事後車況預警 |
+| [asset/](asset/) | demo 用到的素材 |
+
+本 repo 只放 App 端前端原型與規格。模型訓練、資料集、實驗腳本不在此（見 `.gitignore`）。
 
 ## 設計決策
 

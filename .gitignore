@@ -4,6 +4,7 @@
 
 !.gitignore
 !README.md
+!index.html
 
 # ── demo 網頁 ──
 !取車拍照.html
@@ -11,6 +12,13 @@
 !展示首頁.html
 !asset/
 !asset/**
+# 白名單放行 asset/ 後，再排除 demo 沒用到的素材（含 iRent 提供、有真實車牌的照片，不公開散布）
+asset/rcg2235-*
+asset/front-seat-border.jpg
+asset/rearseat-border.jpg
+asset/rdz6925-rear-left-pickup-blur.png
+asset/llm-*
+asset/orb-*
 
 # ── 規格與設計決策 ──
 !借還車流程.md
